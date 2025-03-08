@@ -2,10 +2,8 @@ package com.asap.todoexmple.activity
 
 import android.Manifest
 import android.annotation.SuppressLint
-import android.content.BroadcastReceiver
-import android.content.Context
+import android.content.ComponentName
 import android.content.Intent
-import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
@@ -15,11 +13,21 @@ import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.annotation.RequiresApi
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import com.asap.todoexmple.R
-import com.asap.todoexmple.receiver.SmsReceiver
+import com.asap.todoexmple.application.SmsRepository
+import com.asap.todoexmple.application.SmsViewModel
+import com.asap.todoexmple.application.YourApplication
+
 import com.asap.todoexmple.service.NotificationMonitorService
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -28,115 +36,149 @@ class MainActivity : ComponentActivity() {
     private lateinit var tvSender: TextView
     private lateinit var tvContent: TextView
     private lateinit var tvDate: TextView
-    private var isReceiverRegistered = false
-
-    private val smsReceiver = object : BroadcastReceiver() {
-
-        override fun onReceive(context: Context, intent: Intent) {
-            if (intent?.action == SmsReceiver.SMS_RECEIVED_ACTION) {
-                val sender = intent.getStringExtra("sender") ?: ""
-                val body = intent.getStringExtra("body") ?: ""
-                val timestamp = intent.getLongExtra("timestamp", 0L)
-
-                updateSmsUI(sender, body, timestamp)
-            }
-        }
-
-    }
+    private lateinit var smsViewModel: SmsViewModel
+    private val smsRepository = SmsRepository()
 
     // 权限请求
+    @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     private val requestPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
     ) { permissions ->
-        if (permissions.all { it.value }) {
-            // 所有权限都已授予
-            registerSmsReceiver()
-        } else {
+        if (!permissions.all { it.value }) {
             Toast.makeText(this, "需要短信权限才能接收短信", Toast.LENGTH_SHORT).show()
         }
     }
 
-    @SuppressLint("QueryPermissionsNeeded")
-    override fun onCreate(savedInstanceState: Bundle?) {
+/////////////////android 生命周期之onCreat//////////////////////////
+   @RequiresApi(Build.VERSION_CODES.TIRAMISU)
+   override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+
         setContentView(R.layout.activity_main)
 
+        // 通知监听服务初始化
+        initNotificationService()
+
         // 初始化视图
-        tvSender = findViewById(R.id.tvSender)
-        tvContent = findViewById(R.id.tvContent)
-        tvDate = findViewById(R.id.tvDate)
+        initViews()
+
+        // 获取 ViewModel
+        smsViewModel = (application as YourApplication).smsViewModel
 
         // 检查并请求权限
         checkAndRequestPermissions()
 
-        if (NotificationManagerCompat.getEnabledListenerPackages(this).contains(packageName)){
-            val intent = Intent(this, NotificationMonitorService::class.java)
-            startService(intent)
-        }else{
-            startActivity(Intent("android.settings.ACTION_NOTIFICATION_LISTENER_SETTINGS"))
+        // 观察短信更新
+        observeSmsUpdates()
+    }
+/////////////////自定义的函数//////////////////////////
+    private fun observeSmsUpdates() {
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                smsViewModel.smsFlow.collect { smsMessage ->
+                    updateSmsUI(smsMessage.sender, smsMessage.body, smsMessage.timestamp)
+                }
+            }
         }
     }
 
+    private fun initViews() {
+        tvSender = findViewById(R.id.tvSender)
+        tvContent = findViewById(R.id.tvContent)
+        tvDate = findViewById(R.id.tvDate)
+    }
+
+    //////通知获取的函数小伙伴们/////
+    private fun initNotificationService() {
+        // 修改通知监听服务的启动逻辑
+        if (!isNotificationServiceEnabled()) {
+            // 如果服务未启用，引导用户去设置
+            Toast.makeText(this, "请授权通知访问权限", Toast.LENGTH_LONG).show()
+            startActivity(Intent("android.settings.ACTION_NOTIFICATION_LISTENER_SETTINGS"))
+        } else {
+            // 服务已启用，确保服务正在运行
+            toggleNotificationListenerService()
+        }
+    }
+
+    // 添加切换服务的方法
+    private fun toggleNotificationListenerService() {
+        val thisComponent = ComponentName(this, NotificationMonitorService::class.java)
+        packageManager.setComponentEnabledSetting(
+            thisComponent,
+            PackageManager.COMPONENT_ENABLED_STATE_DISABLED,
+            PackageManager.DONT_KILL_APP
+        )
+        packageManager.setComponentEnabledSetting(
+            thisComponent,
+            PackageManager.COMPONENT_ENABLED_STATE_ENABLED,
+            PackageManager.DONT_KILL_APP
+        )
+
+        // 重启服务
+        val intent = Intent(this, NotificationMonitorService::class.java)
+        stopService(intent)
+        startService(intent)
+    }
+
+    // 添加检查通知监听服务是否启用的方法
+    private fun isNotificationServiceEnabled(): Boolean {
+        val packageNames = NotificationManagerCompat.getEnabledListenerPackages(this)
+        return packageNames.contains(packageName)
+    }
+    //////通知获取的函数小伙伴们--到这里结束啦/////
+
+    @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     private fun checkAndRequestPermissions() {
-        val permissions = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+        val permissions =
             arrayOf(
                 Manifest.permission.RECEIVE_SMS,
                 Manifest.permission.READ_SMS,
                 Manifest.permission.POST_NOTIFICATIONS
             )
-        } else {
-            arrayOf(
-                Manifest.permission.RECEIVE_SMS,
-                Manifest.permission.READ_SMS
-            )
-        }
 
         val permissionsToRequest = permissions.filter {
             ContextCompat.checkSelfPermission(this, it) != PackageManager.PERMISSION_GRANTED
         }.toTypedArray()
 
-        if (permissionsToRequest.isEmpty()) {
-            // 已经有所有需要的权限
-            registerSmsReceiver()
-        } else {
-            // 请求权限
+        if (permissionsToRequest.isNotEmpty()) {
             requestPermissionLauncher.launch(permissionsToRequest)
         }
     }
 
-
-    @SuppressLint("UnspecifiedRegisterReceiverFlag")
-    private fun registerSmsReceiver() {
-        if (!isReceiverRegistered) {
-            val filter = IntentFilter(SmsReceiver.SMS_RECEIVED_ACTION)
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                registerReceiver(smsReceiver, filter, Context.RECEIVER_NOT_EXPORTED)
-            } else {
-                registerReceiver(smsReceiver, filter)
-            }
-            isReceiverRegistered = true
-        }
-    }
-
+    @SuppressLint("SetTextI18n")
     private fun updateSmsUI(sender: String, body: String, timestamp: Long) {
+        Log.d("MainActivity", "开始更新UI")
         tvSender.text = "发送人：$sender"
         tvContent.text = "短信内容：$body"
-        Log.i(
-            "发送人：$sender",
-            " 短信内容：$body"
-        )
-        val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
-        val date = Date(timestamp)
-        tvDate.text = "时间：${dateFormat.format(date)}"
-    }
+        try {
+            val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
+            val date = Date(timestamp)
+            val formattedDate = dateFormat.format(date)
+            tvDate.text = "时间：$formattedDate"
+            Log.d("MainActivity", "UI 已更新 - 发送人: $sender, 内容: $body")
+            // 保存到数据库
+            lifecycleScope.launch(Dispatchers.IO) {
+                Log.d("MainActivity", "开始保存数据")
+                val success = try {
+                    smsRepository.saveSmsData(sender, body)
+                } catch (e: Exception) {
+                    Log.e("MainActivity", "保存过程出错", e)
+                    false
+                }
 
-    override fun onDestroy() {
-        super.onDestroy()
-        // 注销广播接收器
-        if (isReceiverRegistered) {
-            unregisterReceiver(smsReceiver)
-            isReceiverRegistered = false
+                withContext(Dispatchers.Main) {
+                    val message = if (success) "保存成功" else "保存失败"
+                    Toast.makeText(this@MainActivity, message, Toast.LENGTH_SHORT).show()
+                    Log.d("MainActivity", "保存结果: $message")
+                }
+            }
+                } catch (e: Exception) {
+                    Log.e("MainActivity", "更新 UI 时出错", e)
+                }
+            }
         }
-    }
-}
+
+
+
