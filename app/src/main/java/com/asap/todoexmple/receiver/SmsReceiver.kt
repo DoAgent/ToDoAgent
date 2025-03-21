@@ -36,10 +36,17 @@ class SmsReceiver : BroadcastReceiver() {
 
         Log.d("SMS", "来自：$sender，内容：$fullMessage")
 
-        // 使用 Application 范围的 ViewModel
-        val viewModel = (context.applicationContext as YourApplication).smsViewModel
+        // 使用 Application 实例访问 ViewModel
         GlobalScope.launch {
-            viewModel.sendSms(sender, fullMessage.toString(), timestamp)
+            try {
+                YourApplication.getInstance().smsViewModel.sendSms(
+                    sender,
+                    fullMessage.toString(),
+                    timestamp
+                )
+            } catch (e: Exception) {
+                Log.e("SMS", "处理短信失败", e)
+            }
         }
     }
 }
