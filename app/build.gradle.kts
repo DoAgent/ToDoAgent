@@ -2,11 +2,12 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
+    id ("androidx.navigation.safeargs.kotlin")
 }
 
 android {
     namespace = "com.asap.todoexmple"
-    compileSdk = 34
+    compileSdk = 35
 
     defaultConfig {
         applicationId = "com.asap.todoexmple"
@@ -36,7 +37,9 @@ android {
     }
     buildFeatures {
         compose = true
+        viewBinding = true
     }
+
 //    packagingOptions {
 //        exclude ("META-INF/DEPENDENCIES")
 //        exclude ("META-INF/LICENSE")
@@ -51,6 +54,24 @@ android {
 }
 
 dependencies {
+//    // HikariCP 依赖
+//    implementation ("com.zaxxer:HikariCP-android:2.4.0")
+//    // SLF4J 依赖 (HikariCP需要)
+//    implementation ("org.slf4j:slf4j-android:1.7.36")
+    implementation ("androidx.cardview:cardview:1.0.0")
+    implementation ("androidx.viewpager2:viewpager2:1.0.0")
+
+
+    implementation ("androidx.work:work-runtime-ktx:2.8.1")
+    //外观
+    implementation ("androidx.appcompat:appcompat:1.6.1")
+    implementation ("com.google.android.material:material:1.9.0")
+    implementation ("de.hdodenhof:circleimageview:3.1.0")
+    //fragment
+    implementation ("androidx.navigation:navigation-fragment-ktx:2.7.7")
+    implementation ("androidx.navigation:navigation-ui-ktx:2.7.7")
+    implementation ("androidx.fragment:fragment-ktx:1.6.2")
+
     implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.7.0")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.7.0")
     //implementation("androidx.localbroadcastmanager:localbroadcastmanager:1.1.0")
@@ -63,7 +84,7 @@ dependencies {
     implementation ("mysql:mysql-connector-java:5.1.49")  // 使用较老但稳定的版本
 //    implementation("org.mariadb.jdbc:mariadb-java-client:3.0.3")
 //    // 如果遇到 minify 问题，添加以下配置
-//    implementation ("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.1")
+    implementation ("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.1")
     ////
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
@@ -74,6 +95,10 @@ dependencies {
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
     implementation(libs.androidx.constraintlayout)
+    implementation(libs.androidx.recyclerview)
+    implementation(libs.androidx.work.runtime.ktx)
+    implementation(libs.firebase.components)
+    implementation(libs.play.services.cast.framework)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
