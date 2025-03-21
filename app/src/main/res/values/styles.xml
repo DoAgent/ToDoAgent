@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <style name="CategoryButton" parent="Widget.MaterialComponents.Button" tools:ignore="DuplicateDefinition">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">40dp</item>
+        <item name="android:textSize">14sp</item>
+        <item name="android:paddingStart">16dp</item>
+        <item name="android:paddingEnd">16dp</item>
+        <item name="android:background">@drawable/button_rounded</item>
+        <item name="android:elevation">4dp</item>
+        <item name="android:translationZ">2dp</item>
+        <item name="cornerRadius">20dp</item>
+        <item name="android:textSize">14sp</item>
+
+    </style>
+
+    <!-- Button styles -->
+    <style name="Widget.ToDoAgent.Button" parent="Widget.AppCompat.Button">
+        <item name="android:textColor">@color/text_primary</item>
+        <item name="android:padding">16dp</item>
+        <item name="android:background">@color/primary_color</item>
+    </style>
+
+    <!-- Text styles -->
+    <style name="TextAppearance.ToDoAgent.Headline" parent="TextAppearance.AppCompat.Headline">
+        <item name="android:textColor">?android:attr/textColorPrimary</item>
+    </style>
+
+    <style name="CustomShapeAppearance">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">8dp</item>
+    </style>
+
+    <style name="CustomRoundedShape">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">16dp</item>
+    </style>
+</resources> 
