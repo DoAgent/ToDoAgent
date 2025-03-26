@@ -4,8 +4,58 @@ import json
 import os
 from dotenv import load_dotenv
 
-# Load environment variables
+# Load environment variables of LLM api (if .env file is present)
 load_dotenv()
+
+# 配置NIM Phi4 API
+PHI4_FREE_KEY = os.getenv("PHI4_FREE_KEY", "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")
+PHI4_FREE_ENDPOINT = os.getenv("PHI4_FREE_ENDPOINT", "")
+PHI4_FREE_DEPLOYMENT = os.getenv("PHI4_FREE_DEPLOYMENT", "NIM")
+
+# 获取Azure配置参数
+PHI4_AZURE_ENDPOINT = os.getenv("PHI4_AZURE_ENDPOINT", "https://Phi-4-multimodal-instruct-todo.eastus2.models.ai.azure.com")
+PHI4_AZURE_API_KEY = os.getenv("PHI4_AZURE_API_KEY", "m4uNulbhzoxgQMEjJ2r6UFcYIf3E5DF8")
+PHI4_AZURE_DEPLOYMENT = os.getenv("PHI4_AZURE_DEPLOYMENT_NAME", "Azure")
+
+# 如果有FREE PHI4配置，则使用FREE PHI4
+if PHI4_FREE_KEY.strip() and PHI4_FREE_ENDPOINT.strip() and PHI4_FREE_DEPLOYMENT.strip():
+    phi4.api_type = PHI4_FREE_DEPLOYMENT
+    phi4.api_endpoint = PHI4_FREE_ENDPOINT
+    phi4.api_key = PHI4_FREE_KEY
+    phi4.api_version = "2025-05-15"  # 可能需要根据实际情况调整
+else
+    phi4.api_type = PHI4_AZURE_DEPLOYMENT
+    phi4.api_endpoint = PHI4_FREE_ENDPOINT
+    phi4.api_key = PHI4_FREE_KEY
+    phi4.api_version = "2023-05-15"  # 可能需要根据实际情况调整
+
+
+# UsePhi4RAG_Step 1: Connect to Azure AI Inference & Azure AI Search
+from azure.ai.inference import ChatCompletionsClient
+from azure.ai.inference.models import (
+    SystemMessage,
+    UserMessage,
+    TextContentItem,
+    ImageContentItem,
+    ImageUrl,
+    ImageDetailLevel,
+)
+from azure.core.credentials import AzureKeyCredential
+from azure.search.documents import SearchClient
+from azure.search.documents.models import VectorizableTextQuery
+
+chat_client = ChatCompletionsClient(
+    endpoint=os.environ["PHI4_FREE_ENDPOINT"], #Phi-4-multimodal serverless endpoint
+    credential=AzureKeyCredential(os.environ["PHI4_FREE_KEY"]),
+)
+
+search_client = SearchClient(
+    endpoint=os.environ["AZURE_SEARCH_ENDPOINT"],
+    index_name=os.environ["AZURE_SEARCH_INDEX"],
+    credential=AzureKeyCredential(os.environ["AZURE_SEARCH_KEY"])
+)
+
+
 
 class MessageProcessor:
     """消息处理器类，用于从数据库获取和过滤消息"""
@@ -38,6 +88,60 @@ class MessageProcessor:
         )
         return self.all_data
     
+    # UsePhi4RAG_Step 2: Retrieve relevant documents from Azure AI Search
+    def retrieve_documents(query: str, top: int = 3):
+        vector_query = VectorizableTextQuery(text=query, k_nearest_neighbors=top, fields="text_vector")
+        results = search_client.search(search_text=query, vector_queries=[vector_query], select=["content"], top=top)    
+        return [doc["content"] for doc in results]
+
+        ## Example for Muli-modal search if you have a text_vector AND image_vector field in your vector_index
+        ## NOTE, image vectorization is in preview at the time of writing this code, please use azure-search-documents pypi version >11.6.0b6 
+        # def retrieve_documents_multimodal(query: str, image_url: str, top: int = 3):
+        #     text_vector_query = VectorizableTextQuery(
+        #         text=query,
+        #         k_nearest_neighbors=top,
+        #         fields="text_vector",
+        #         weight=0.5  # Adjust weight as needed
+        #     )
+        #     image_vector_query = VectorizableImageUrlQuery(
+        #         url=image_url,
+        #         k_nearest_neighbors=top,
+        #         fields="image_vector",
+        #         weight=0.5  # Adjust weight as needed
+        #     )
+
+        #     results = search_client.search(
+        #         search_text=query,  
+        #         vector_queries=[text_vector_query, image_vector_query],
+        #         select=["content"],
+        #         top=top
+        #     )
+        #     return [doc["content"] for doc in results]
+
+    # UsePhi4RAG_SStep 3: Generate a multimodal RAG-based answer using retrieved text and an image input
+    def generate_multimodal_rag_response(query: str, image_url: str):
+        # Retrieve text context from search
+        docs = retrieve_documents(query)
+        context = "\n---\n".join(docs)
+
+        # Build a prompt that combines the retrieved context with the user query
+        prompt = f"""You are a helpful assistant. Use only the following context to answer the question. If the answer isn't in the context, say 'I don't know'.
+        Context: {context} Question: {query} Answer:"""
+        # Create a chat request that includes both text and image input
+        response = chat_client.complete(
+            messages=[
+                SystemMessage(content="You are a helpful assistant that can process both text and images."),
+                UserMessage(
+                    content=[
+                        TextContentItem(text=prompt),
+                        ImageContentItem(image_url=ImageUrl(url=image_url, detail=ImageDetailLevel.HIGH)),
+                    ]
+                ),
+            ]
+        )
+        return response.choices[0].message.content
+
+    
     def filter_messages_by_ids(self, target_ids: List[int], data: Optional[List[Dict[str, Any]]] = None) -> List[Dict[str, Any]]:
         """
         根据目标ID过滤消息数据
@@ -48,12 +152,27 @@ class MessageProcessor:
         返回:
             过滤后的消息列表，每个消息包含完整信息
         """
+        
         # 如果没有提供数据且没有已获取的数据，则获取所有消息
         if data is None:
             if self.all_data is None:
                 self.fetch_all_messages()
             data = self.all_data
         
+        ##########################################FilterLLM Start############################################
+        
+        # Sematic Filting: MVP use case prompt提示词
+        # string FilterLLM_MVPprompt = " "
+        user_query = "Can you filter the message below and list some of them which are very urgent and highly related to my todo list? Only select ones and tell me the message id of them. "
+        sample_image_url = "https://images.unsplash.com/photo-1542291026-7eec264c27ff?q=80&w=1770&auto=format&fit=crop&ixlib=rb-4.0.3"
+        answer = generate_multimodal_rag_response(user_query, sample_image_url)
+        print(f"Q: {user_query}\nA: {answer}")
+
+        
+        
+
+        ##########################################FilterLLM End############################################
+
         result = []
         for msg in data:
             msg_id = msg.get('message_id')
