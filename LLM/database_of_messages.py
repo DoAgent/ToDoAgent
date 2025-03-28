@@ -1,3 +1,6 @@
+#!/usr/bin/env python
+# -*- coding:utf-8 -*-
+
 import mysql.connector
 from mysql.connector import Error
 from typing import List, Dict, Any, Optional
