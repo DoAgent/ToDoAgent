@@ -1,0 +1,11 @@
+mysql:
+  host: 103.116.245.150
+  port: 3306
+  user: user
+  password: 53676cae56536f4b8
+  database: ToDoAgent
+
+openai:
+  base_url: https://aihubmix.com/v1
+  api_key: sk-o4NKlYiGRlESc8UK669cAdEd5f5a4b428bD21f9334680bFa
+  model: gpt-4o-mini
