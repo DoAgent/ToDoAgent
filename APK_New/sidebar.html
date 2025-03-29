@@ -1,0 +1,121 @@
+<!--
+ * @Author: mdhuang555 67590178+mdhuang555@users.noreply.github.com
+ * @Date: 2025-03-26 22:23:57
+ * @LastEditors: mdhuang555 67590178+mdhuang555@users.noreply.github.com
+ * @LastEditTime: 2025-03-26 23:56:29
+ * @FilePath: \ToDoAgent2\sidebar.html
+ * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
+-->
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TODO App - 侧滑菜单</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <!-- 遮罩层 -->
+    <div id="overlay" class="fixed inset-0 bg-black bg-opacity-50 z-40 transition-opacity" onclick="closeSidebar()"></div>
+
+    <!-- 侧滑菜单 -->
+    <div id="sidebar" class="fixed top-0 left-0 h-full w-64 bg-white shadow-lg z-50 transform -translate-x-full transition-transform duration-300 ease-in-out">
+        <!-- 用户信息区域 -->
+        <div class="p-6 bg-blue-500 text-white">
+            <div class="flex items-center space-x-4">
+                <div class="w-12 h-12 rounded-full bg-white text-blue-500 flex items-center justify-center">
+                    <i class="fas fa-user-circle text-2xl"></i>
+                </div>
+                <div>
+                    <h2 class="font-semibold">用户名</h2>
+                    <p class="text-sm text-blue-100">user@example.com</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 导航菜单 -->
+        <nav class="mt-4">
+            <a href="#" class="flex items-center px-6 py-3 text-gray-700 hover:bg-gray-100">
+                <i class="fas fa-tasks w-6"></i>
+                <span class="ml-2">所有任务</span>
+            </a>
+            <a href="#" class="flex items-center px-6 py-3 text-gray-700 hover:bg-gray-100">
+                <i class="fas fa-star w-6"></i>
+                <span class="ml-2">重要任务</span>
+            </a>
+            <a href="#" class="flex items-center px-6 py-3 text-gray-700 hover:bg-gray-100">
+                <i class="fas fa-calendar w-6"></i>
+                <span class="ml-2">今日待办</span>
+            </a>
+            <a href="#" class="flex items-center px-6 py-3 text-gray-700 hover:bg-gray-100">
+                <i class="fas fa-check-circle w-6"></i>
+                <span class="ml-2">已完成</span>
+            </a>
+            <div class="border-t border-gray-200 my-2"></div>
+
+            <!-- 标签筛选 -->
+            <div class="px-6 py-2">
+                <h3 class="text-sm font-medium text-gray-500 mb-2">标签筛选</h3>
+                <div class="space-y-2">
+                    <a href="#" class="flex items-center justify-between py-2 px-3 rounded-lg hover:bg-gray-100">
+                        <div class="flex items-center">
+                            <span class="w-2 h-2 rounded-full bg-blue-500"></span>
+                            <span class="ml-2 text-gray-700">公司</span>
+                        </div>
+                        <span class="text-xs text-gray-500">12</span>
+                    </a>
+                    <a href="#" class="flex items-center justify-between py-2 px-3 rounded-lg hover:bg-gray-100">
+                        <div class="flex items-center">
+                            <span class="w-2 h-2 rounded-full bg-purple-500"></span>
+                            <span class="ml-2 text-gray-700">私人</span>
+                        </div>
+                        <span class="text-xs text-gray-500">8</span>
+                    </a>
+                    <a href="#" class="flex items-center justify-between py-2 px-3 rounded-lg hover:bg-gray-100">
+                        <div class="flex items-center">
+                            <span class="w-2 h-2 rounded-full bg-green-500"></span>
+                            <span class="ml-2 text-gray-700">家庭</span>
+                        </div>
+                        <span class="text-xs text-gray-500">5</span>
+                    </a>
+                    <a href="#" class="flex items-center justify-between py-2 px-3 rounded-lg hover:bg-gray-100">
+                        <div class="flex items-center">
+                            <span class="w-2 h-2 rounded-full bg-orange-500"></span>
+                            <span class="ml-2 text-gray-700">学习</span>
+                        </div>
+                        <span class="text-xs text-gray-500">3</span>
+                    </a>
+                </div>
+                <!-- 管理标签按钮 -->
+                <button class="mt-3 w-full flex items-center justify-center px-3 py-2 text-sm text-blue-600 hover:bg-blue-50 rounded-lg">
+                    <i class="fas fa-cog text-xs mr-2"></i>
+                    管理标签
+                </button>
+            </div>
+
+            <div class="border-t border-gray-200 my-2"></div>
+            <a href="#" class="flex items-center px-6 py-3 text-gray-700 hover:bg-gray-100">
+                <i class="fas fa-cog w-6"></i>
+                <span class="ml-2">设置</span>
+            </a>
+        </nav>
+    </div>
+
+    <script>
+        function closeSidebar() {
+            document.getElementById('sidebar').classList.add('-translate-x-full');
+            document.getElementById('overlay').classList.add('hidden');
+        }
+
+        // 监听 URL 参数来控制侧边栏的显示
+        window.addEventListener('load', function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('show') === 'true') {
+                document.getElementById('sidebar').classList.remove('-translate-x-full');
+                document.getElementById('overlay').classList.remove('hidden');
+            }
+        });
+    </script>
+</body>
+</html> 
