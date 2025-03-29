@@ -1,7 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<resources>
-    <!-- Text colors for night mode -->
-    <color name="text_primary">#DEFFFFFF</color>
-    <color name="text_secondary">#99FFFFFF</color>
-    <color name="text_disabled">#61FFFFFF</color>
-</resources> 
