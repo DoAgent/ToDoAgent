@@ -1,3 +1,6 @@
+#!/usr/bin/env python
+# -*- coding:utf-8 -*-
+
 from database_of_messages import main as db_main, DateTimeEncoder
 from typing import List, Dict, Any, Optional
 import json
