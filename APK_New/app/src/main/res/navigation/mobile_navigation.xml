@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/mobile_navigation"
+    app:startDestination="@+id/nav_today">
+
+    <fragment
+        android:id="@+id/nav_today"
+        android:name="com.asap.todoagent.ui.today.TodayFragment"
+        android:label="@string/menu_today"
+        tools:layout="@layout/fragment_today" />
+
+    <fragment
+        android:id="@+id/nav_important"
+        android:name="com.asap.todoagent.ui.important.ImportantFragment"
+        android:label="@string/menu_important"
+        tools:layout="@layout/fragment_all" />
+
+    <fragment
+        android:id="@+id/nav_all"
+        android:name="com.asap.todoagent.ui.all.AllFragment"
+        android:label="@string/menu_all"
+        tools:layout="@layout/fragment_all" />
+
+    <fragment
+        android:id="@+id/nav_finished"
+        android:name="com.asap.todoagent.ui.finished.FinishedFragment"
+        android:label="@string/menu_finished"
+        tools:layout="@layout/fragment_finished" />
+</navigation>

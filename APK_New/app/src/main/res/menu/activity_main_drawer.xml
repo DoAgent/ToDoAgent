@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:showIn="navigation_view">
+
+    <group android:checkableBehavior="single">
+        <item
+            android:id="@+id/nav_today"
+            android:icon="@drawable/ic_calendar"
+            android:title="@string/menu_today" />
+        <item
+            android:id="@+id/nav_important"
+            android:icon="@drawable/ic_star"
+            android:title="@string/menu_important" />
+        <item
+            android:id="@+id/nav_all"
+            android:icon="@drawable/ic_tasks"
+            android:title="@string/menu_all" />
+        <item
+            android:id="@+id/nav_finished"
+            android:icon="@drawable/ic_check_circle"
+            android:title="@string/menu_finished" />
+    </group>
+    <item android:title="标签筛选">
+        <menu>
+            <item
+                android:id="@+id/nav_tag_company"
+                android:icon="@drawable/ic_circle_blue"
+                android:title="公司" />
+            <item
+                android:id="@+id/nav_tag_personal"
+                android:icon="@drawable/ic_circle_purple"
+                android:title="私人" />
+            <item
+                android:id="@+id/nav_tag_family"
+                android:icon="@drawable/ic_circle_green"
+                android:title="家庭" />
+            <item
+                android:id="@+id/nav_tag_study"
+                android:icon="@drawable/ic_circle_orange"
+                android:title="学习" />
+        </menu>
+    </item>
+
+    <item android:title="其他">
+        <menu>
+            <item
+                android:id="@+id/nav_settings"
+                android:icon="@drawable/ic_settings"
+                android:title="设置" />
+        </menu>
+    </item>
+</menu>
