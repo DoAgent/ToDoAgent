@@ -1,0 +1,266 @@
+<!--
+ * @Author: mdhuang555 67590178+mdhuang555@users.noreply.github.com
+ * @Date: 2025-03-26 22:18:36
+ * @LastEditors: mdhuang555 67590178+mdhuang555@users.noreply.github.com
+ * @LastEditTime: 2025-03-26 22:54:53
+ * @FilePath: \ToDoAgent2\settings.html
+ * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
+-->
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TODO App - 设置</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .modal {
+            transition: opacity 0.3s ease-in-out;
+        }
+        .modal-content {
+            transition: transform 0.3s ease-in-out;
+        }
+        .modal.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+        .modal.hidden .modal-content {
+            transform: translateY(100%);
+        }
+        .language-option.selected {
+            position: relative;
+        }
+        .language-option.selected::after {
+            content: '';
+            position: absolute;
+            left: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background-color: #3B82F6;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 h-screen">
+    <div class="max-w-md mx-auto h-full flex flex-col">
+        <!-- 顶部导航栏 -->
+        <header class="bg-white shadow-sm">
+            <div class="flex items-center justify-between px-4 py-4">
+                <button class="text-gray-600">
+                    <i class="fas fa-arrow-left text-xl"></i>
+                </button>
+                <h1 class="text-xl font-semibold">设置</h1>
+                <div class="w-8"></div>
+            </div>
+        </header>
+
+        <!-- 设置选项 -->
+        <div class="flex-1 overflow-y-auto">
+            <!-- 账户设置 -->
+            <div class="mt-4 px-4">
+                <h2 class="text-sm font-medium text-gray-400 mb-2">账户</h2>
+                <div class="bg-white rounded-lg">
+                    <div class="flex items-center justify-between px-4 py-4 border-b border-gray-100">
+                        <div class="flex items-center">
+                            <i class="fas fa-phone text-gray-400 w-6"></i>
+                            <span class="ml-2 text-gray-700">手机号</span>
+                        </div>
+                        <div class="flex items-center">
+                            <span class="text-gray-400 text-sm">135****9842</span>
+                            <i class="fas fa-chevron-right text-gray-300 ml-2"></i>
+                        </div>
+                    </div>
+                    <div class="flex items-center justify-between px-4 py-4">
+                        <div class="flex items-center">
+                            <img src="https://www.wechat.com/favicon.ico" alt="WeChat" class="w-5 h-5">
+                            <span class="ml-3 text-gray-700">微信</span>
+                        </div>
+                        <div class="flex items-center">
+                            <span class="text-gray-400 text-sm">已绑定</span>
+                            <i class="fas fa-chevron-right text-gray-300 ml-2"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 应用设置 -->
+            <div class="mt-6 px-4">
+                <h2 class="text-sm font-medium text-gray-400 mb-2">应用</h2>
+                <div class="bg-white rounded-lg">
+                    <div class="flex items-center justify-between px-4 py-4 border-b border-gray-100" id="languageSelector">
+                        <div class="flex items-center">
+                            <i class="fas fa-globe text-gray-400 w-6"></i>
+                            <span class="ml-2 text-gray-700">语言</span>
+                        </div>
+                        <div class="flex items-center">
+                            <span class="text-gray-400 text-sm" id="selectedLanguage">中文（简体中文）</span>
+                            <i class="fas fa-chevron-right text-gray-300 ml-2"></i>
+                        </div>
+                    </div>
+                    <div class="flex items-center justify-between px-4 py-4 border-b border-gray-100">
+                        <div class="flex items-center">
+                            <i class="fas fa-palette text-gray-400 w-6"></i>
+                            <span class="ml-2 text-gray-700">外观</span>
+                        </div>
+                        <div class="flex items-center">
+                            <span class="text-gray-400 text-sm">系统</span>
+                            <i class="fas fa-chevron-right text-gray-300 ml-2"></i>
+                        </div>
+                    </div>
+                    <div class="flex items-center justify-between px-4 py-4">
+                        <div class="flex items-center">
+                            <i class="fas fa-shield-alt text-gray-400 w-6"></i>
+                            <span class="ml-2 text-gray-700">权限管理</span>
+                        </div>
+                        <i class="fas fa-chevron-right text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 关于 -->
+            <div class="mt-6 px-4">
+                <h2 class="text-sm font-medium text-gray-400 mb-2">关于</h2>
+                <div class="bg-white rounded-lg">
+                    <div class="flex items-center justify-between px-4 py-4 border-b border-gray-100">
+                        <div class="flex items-center">
+                            <i class="fas fa-file-alt text-gray-400 w-6"></i>
+                            <span class="ml-2 text-gray-700">用户协议</span>
+                        </div>
+                        <i class="fas fa-chevron-right text-gray-300"></i>
+                    </div>
+                    <div class="flex items-center justify-between px-4 py-4 border-b border-gray-100">
+                        <div class="flex items-center">
+                            <i class="fas fa-shield-alt text-gray-400 w-6"></i>
+                            <span class="ml-2 text-gray-700">隐私政策</span>
+                        </div>
+                        <i class="fas fa-chevron-right text-gray-300"></i>
+                    </div>
+                    <div class="flex items-center justify-between px-4 py-4 border-b border-gray-100">
+                        <div class="flex items-center">
+                            <i class="fas fa-share-alt text-gray-400 w-6"></i>
+                            <span class="ml-2 text-gray-700">第三方信息共享清单</span>
+                        </div>
+                        <i class="fas fa-chevron-right text-gray-300"></i>
+                    </div>
+                    <div class="flex items-center justify-between px-4 py-4 border-b border-gray-100">
+                        <div class="flex items-center">
+                            <i class="fas fa-shield-alt text-gray-400 w-6"></i>
+                            <span class="ml-2 text-gray-700">应用权限</span>
+                        </div>
+                        <i class="fas fa-chevron-right text-gray-300"></i>
+                    </div>
+                    <div class="flex items-center justify-between px-4 py-4 border-b border-gray-100">
+                        <div class="flex items-center">
+                            <i class="fas fa-sync text-gray-400 w-6"></i>
+                            <span class="ml-2 text-gray-700">检查更新</span>
+                        </div>
+                        <div class="flex items-center">
+                            <span class="text-gray-400 text-sm">1.1.3(60)</span>
+                            <i class="fas fa-chevron-right text-gray-300 ml-2"></i>
+                        </div>
+                    </div>
+                    <div class="flex items-center justify-between px-4 py-4">
+                        <div class="flex items-center">
+                            <i class="fas fa-envelope text-gray-400 w-6"></i>
+                            <span class="ml-2 text-gray-700">联系我们</span>
+                        </div>
+                        <i class="fas fa-chevron-right text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 退出登录 -->
+            <div class="mt-6 px-4 mb-8">
+                <button class="w-full py-4 bg-white text-red-500 rounded-lg font-medium">
+                    退出登录
+                </button>
+            </div>
+
+            <!-- 底部版权信息 -->
+            <div class="text-center mb-6">
+                <p class="text-gray-400 text-sm">提供服务：微软Azure</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- 语言选择模态框 -->
+    <div id="languageModal" class="modal fixed inset-0 bg-black bg-opacity-50 z-50 hidden">
+        <div class="modal-content fixed bottom-0 left-0 right-0 bg-white rounded-t-xl">
+            <!-- 模态框标题 -->
+            <div class="flex justify-center items-center relative py-4 border-b border-gray-100">
+                <i class="fas fa-globe text-xl absolute left-4"></i>
+                <h2 class="text-lg font-medium">语言</h2>
+            </div>
+            
+            <!-- 语言选项列表 -->
+            <div class="py-2">
+                <div class="language-option selected flex items-center px-8 py-3">
+                    <span class="text-gray-700">系统</span>
+                </div>
+                <div class="language-option selected flex items-center px-8 py-3">
+                    <span class="text-gray-700">中文（简体中文）</span>
+                </div>
+                <div class="language-option flex items-center px-8 py-3">
+                    <span class="text-gray-700">አማርኛ</span>
+                </div>
+                <div class="language-option flex items-center px-8 py-3">
+                    <span class="text-gray-700">العربية</span>
+                </div>
+                <div class="language-option flex items-center px-8 py-3">
+                    <span class="text-gray-700">հայերեն</span>
+                </div>
+                <div class="language-option flex items-center px-8 py-3">
+                    <span class="text-gray-700">azərbaycan</span>
+                </div>
+            </div>
+
+            <!-- 确认按钮 -->
+            <div class="p-4 border-t border-gray-100">
+                <button id="confirmLanguage" class="w-full py-3 bg-blue-500 text-white rounded-lg font-medium">
+                    确认
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 获取DOM元素
+        const languageSelector = document.getElementById('languageSelector');
+        const languageModal = document.getElementById('languageModal');
+        const confirmButton = document.getElementById('confirmLanguage');
+        const languageOptions = document.querySelectorAll('.language-option');
+
+        // 打开语言选择模态框
+        languageSelector.addEventListener('click', () => {
+            languageModal.classList.remove('hidden');
+        });
+
+        // 关闭模态框
+        confirmButton.addEventListener('click', () => {
+            languageModal.classList.add('hidden');
+        });
+
+        // 点击背景关闭模态框
+        languageModal.addEventListener('click', (e) => {
+            if (e.target === languageModal) {
+                languageModal.classList.add('hidden');
+            }
+        });
+
+        // 语言选项点击事件
+        languageOptions.forEach(option => {
+            option.addEventListener('click', () => {
+                // 移除其他选项的选中状态
+                languageOptions.forEach(opt => opt.classList.remove('selected'));
+                // 添加当前选项的选中状态
+                option.classList.add('selected');
+                // 更新显示的语言
+                document.getElementById('selectedLanguage').textContent = option.querySelector('span').textContent;
+            });
+        });
+    </script>
+</body>
+</html> 
