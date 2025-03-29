@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/navigation_home"
+        android:icon="@android:drawable/ic_menu_my_calendar"
+        android:title="@string/home"
+        android:tint="#9CA3AF"/>
+    <item
+        android:id="@+id/navigation_calendar"
+        android:icon="@android:drawable/ic_menu_my_calendar"
+        android:title="@string/calender"
+        android:tint="#9CA3AF"/>
+    <item
+        android:id="@+id/navigation_statistics"
+        android:icon="@android:drawable/ic_menu_report_image"
+        android:title="@string/statistics"
+        android:tint="#9CA3AF"/>
+    <item
+        android:id="@+id/navigation_profile"
+        android:icon="@android:drawable/ic_menu_myplaces"
+        android:title="@string/profile"
+        android:tint="#9CA3AF"/>
+<!--    <item-->
+<!--        android:id="@+id/settingsFragment"-->
+<!--        android:icon="@drawable/ic_settings"-->
+<!--        android:title="设置" />-->
+</menu> 
