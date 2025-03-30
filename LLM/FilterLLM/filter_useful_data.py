@@ -4,30 +4,74 @@ import json
 import os
 from dotenv import load_dotenv
 
+from azure.ai.inference import ChatCompletionsClient
+from azure.ai.inference.models import UserMessage
+from azure.core.credentials import AzureKeyCredential
+from azure.search.documents import SearchClient
+from azure.search.documents.models import VectorizableTextQuery
+
 # Load environment variables of LLM api (if .env file is present)
 load_dotenv()
 
-# 配置NIM Phi4 API
-PHI4_FREE_KEY = os.getenv("PHI4_FREE_KEY", "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")
+# 配置FREE/Azure Phi4 API
+PHI4_FREE_KEY = os.getenv("PHI4_FREE_KEY", "")
 PHI4_FREE_ENDPOINT = os.getenv("PHI4_FREE_ENDPOINT", "")
-PHI4_FREE_DEPLOYMENT = os.getenv("PHI4_FREE_DEPLOYMENT", "NIM")
+PHI4_FREE_DEPLOYMENT = "ollama"
 
-# 获取Azure配置参数
-PHI4_AZURE_ENDPOINT = os.getenv("PHI4_AZURE_ENDPOINT", "https://Phi-4-multimodal-instruct-todo.eastus2.models.ai.azure.com")
-PHI4_AZURE_API_KEY = os.getenv("PHI4_AZURE_API_KEY", "m4uNulbhzoxgQMEjJ2r6UFcYIf3E5DF8")
-PHI4_AZURE_DEPLOYMENT = os.getenv("PHI4_AZURE_DEPLOYMENT_NAME", "Azure")
+PHI4_AZURE_ENDPOINT = os.getenv("PHI4_AZURE_ENDPOINT", "")
+PHI4_AZURE_API_KEY = os.getenv("PHI4_AZURE_API_KEY", "")
+PHI4_AZURE_DEPLOYMENT = "Azure"
+
+# 配置Search API
+SEARCH_GOOGLE_ENDPOINT = os.getenv("SEARCH_GOOGLE_ENDPOINT","")
+SEARCH_GOOGLE_INDEX = os.getenv("SEARCH_GOOGLE_INDEX","")
+SEARCH_GOOGLE_KEY = os.getenv("SEARCH_GOOGLE_KEY", "")
+
+SEARCH_AZURE_ENDPOINT = os.getenv("SEARCH_AZURE_ENDPOINT","")
+SEARCH_AZURE_INDEX = os.getenv("SEARCH_AZURE_INDEX","")
+SEARCH_AZURE_KEY = os.getenv("SEARCH_AZURE_KEY", "")
+
+# Placeholder for phi4 to avoid "not defined" error
+class phi4:
+    api_type = None
+    api_endpoint = None
+    api_key = None
+    api_version = None
+
+class search:
+    api_endpoint = None
+    api_index = None
+    api_key = None
+    api_provider = None
 
 # 如果有FREE PHI4配置，则使用FREE PHI4
 if PHI4_FREE_KEY.strip() and PHI4_FREE_ENDPOINT.strip() and PHI4_FREE_DEPLOYMENT.strip():
     phi4.api_type = PHI4_FREE_DEPLOYMENT
     phi4.api_endpoint = PHI4_FREE_ENDPOINT
     phi4.api_key = PHI4_FREE_KEY
-    phi4.api_version = "2025-05-15"  # 可能需要根据实际情况调整
-else
+    phi4.api_version = "2025-05-15"
+else:
     phi4.api_type = PHI4_AZURE_DEPLOYMENT
-    phi4.api_endpoint = PHI4_FREE_ENDPOINT
-    phi4.api_key = PHI4_FREE_KEY
-    phi4.api_version = "2023-05-15"  # 可能需要根据实际情况调整
+    phi4.api_endpoint = PHI4_AZURE_ENDPOINT  # Correct fallback
+    phi4.api_key = PHI4_AZURE_API_KEY       # Correct fallback
+    phi4.api_version = "2023-05-15"
+
+print(f"Using {phi4.api_type} API with endpoint: {phi4.api_endpoint}")
+
+# 如果有GOOGLE SEARCH配置，则使用GOOGLE SEARCH
+if SEARCH_GOOGLE_KEY.strip() and SEARCH_GOOGLE_ENDPOINT.strip():
+    search.api_endpoint = SEARCH_GOOGLE_ENDPOINT
+    search.api_index = SEARCH_GOOGLE_INDEX
+    search.api_key = SEARCH_GOOGLE_KEY
+    search.api_provider = "Google"
+else:
+    search.api_endpoint = SEARCH_AZURE_ENDPOINT
+    search.api_index = SEARCH_AZURE_INDEX
+    search.api_key = SEARCH_AZURE_KEY
+    search.api_provider = "Azure"
+# 其他情況、则使用AZURE SEARCH
+    
+print(f"Using {search.api_provider} Search API with endpoint: {search.api_endpoint}")
 
 
 # UsePhi4RAG_Step 1: Connect to Azure AI Inference & Azure AI Search
@@ -45,14 +89,14 @@ from azure.search.documents import SearchClient
 from azure.search.documents.models import VectorizableTextQuery
 
 chat_client = ChatCompletionsClient(
-    endpoint=os.environ["PHI4_FREE_ENDPOINT"], #Phi-4-multimodal serverless endpoint
-    credential=AzureKeyCredential(os.environ["PHI4_FREE_KEY"]),
+    endpoint=phi4.api_endpoint,  # Use the value directly
+    credential=AzureKeyCredential(phi4.api_key),  # Use the value directly
 )
 
 search_client = SearchClient(
-    endpoint=os.environ["AZURE_SEARCH_ENDPOINT"],
-    index_name=os.environ["AZURE_SEARCH_INDEX"],
-    credential=AzureKeyCredential(os.environ["AZURE_SEARCH_KEY"])
+    endpoint=search.api_endpoint,  # Use the value directly
+    index_name=search.api_index,  # Use the value directly
+    credential=AzureKeyCredential(search.api_key),  # Use the value directly
 )
 
 
@@ -118,7 +162,7 @@ class MessageProcessor:
         #     )
         #     return [doc["content"] for doc in results]
 
-    # UsePhi4RAG_SStep 3: Generate a multimodal RAG-based answer using retrieved text and an image input
+    # UsePhi4RAG_Step 3: Generate a multimodal RAG-based answer using retrieved text and an image input
     def generate_multimodal_rag_response(query: str, image_url: str):
         # Retrieve text context from search
         docs = retrieve_documents(query)
@@ -163,9 +207,18 @@ class MessageProcessor:
         
         # Sematic Filting: MVP use case prompt提示词
         # string FilterLLM_MVPprompt = " "
-        user_query = "Can you filter the message below and list some of them which are very urgent and highly related to my todo list? Only select ones and tell me the message id of them. "
+        ICL_prompt = "You  are a notification filter and need to only leave message_id  in your output. and make sure they are " \
+        "within 3 kinds of notification: (1) about express delivery, only leave its message id when it is asking me to pick up " \
+        "(2) about bill charging, only leave its message id when it is asking me  to pay it (3) about conference notification," \
+        " only leave its message id when it is asking me to join. should only output ‘message_id’  such as ’1, 3‘, and its " \
+        "content, and your reason."
+        RAG_prompt = ""
+        raw_notification = data
+
+        
+        user_query = ICL_prompt + json.dumps(raw_notification, ensure_ascii=False, indent=4, cls=DateTimeEncoder) + RAG_prompt
         sample_image_url = "https://images.unsplash.com/photo-1542291026-7eec264c27ff?q=80&w=1770&auto=format&fit=crop&ixlib=rb-4.0.3"
-        answer = generate_multimodal_rag_response(user_query, sample_image_url)
+        answer = self.generate_multimodal_rag_response(user_query, sample_image_url)
         print(f"Q: {user_query}\nA: {answer}")
 
         
@@ -309,4 +362,4 @@ if __name__ == '__main__':
     
     # 打印结果
     print(processor.to_json(transformed_data))
-    
+

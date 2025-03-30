@@ -153,10 +153,28 @@ if __name__ == "__main__":
     print(json.dumps(data_result, ensure_ascii=False, indent=4, cls=DateTimeEncoder))
 
 
+def generate_multimodal_rag_response(self, query: str, image_url: str):
+    # Retrieve text context from search
+    docs = self.retrieve_documents(query)  # Use self to call the instance method
+    context = "\n---\n".join(docs)
 
-
-
-
+    # Build a prompt that combines the retrieved context with the user query
+    prompt = f"""You are a helpful assistant. Use only the following context to answer the question. If the answer isn't in the context, say 'I don't know'.
+    Context: {context} Question: {query} Answer:"""
+    
+    # Create a chat request that includes both text and image input
+    response = chat_client.complete(
+        messages=[
+            SystemMessage(content="You are a helpful assistant that can process both text and images."),
+            UserMessage(
+                content=[
+                    TextContentItem(text=prompt),
+                    ImageContentItem(image_url=ImageUrl(url=image_url, detail=ImageDetailLevel.HIGH)),
+                ]
+            ),
+        ]
+    )
+    return response.choices[0].message.content
 
 
 """
