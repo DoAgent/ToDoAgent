@@ -1,0 +1,81 @@
+导出时间: 2025-03-30 16:26:35
+用户ID: 67619984
+==================================================
+
+待办事项:
+  todo_id: 1
+  user_id: 67619984
+  start_time: 2025-03-16 09:46:41
+  end_time: 2025-03-17 09:46:56
+  location: 广州越秀
+  todo_content: 取快递
+  todo_statu: doing
+  urgency_statu: unimportant
+  last_modified: 2025-03-16 20:25:56
+--------------------------------------------------
+待办事项:
+  todo_id: 2
+  user_id: 67619984
+  start_time: 2025-03-27 09:46:56
+  end_time: 2025-03-29 09:46:56
+  location: 广州越秀
+  todo_content: 交水费
+  todo_statu: doing
+  urgency_statu: unimportant
+  last_modified: 2025-03-16 21:25:56
+--------------------------------------------------
+待办事项:
+  todo_id: 3
+  user_id: 67619984
+  start_time: 2025-03-27 09:46:56
+  end_time: 2025-03-29 10:46:56
+  location: 广州越秀
+  todo_content: 取快递2
+  todo_statu: doing
+  urgency_statu: unimportant
+  last_modified: 2025-03-16 22:25:56
+--------------------------------------------------
+待办事项:
+  todo_id: 4
+  user_id: 67619984
+  start_time: 2025-03-27 10:46:56
+  end_time: 2025-03-29 11:46:56
+  location: 广州越秀
+  todo_content: 交水费2
+  todo_statu: doing
+  urgency_statu: unimportant
+  last_modified: 2025-03-16 23:25:56
+--------------------------------------------------
+待办事项:
+  todo_id: 5
+  user_id: 67619984
+  start_time: 2025-03-27 11:46:56
+  end_time: 2025-03-29 12:46:56
+  location: 广州越秀
+  todo_content: 取快递3
+  todo_statu: doing
+  urgency_statu: unimportant
+  last_modified: 2025-03-17 00:25:56
+--------------------------------------------------
+待办事项:
+  todo_id: 6
+  user_id: 67619984
+  start_time: 2025-03-27 12:46:56
+  end_time: 2025-03-29 13:46:56
+  location: 广州越秀
+  todo_content: 交水费3
+  todo_statu: doing
+  urgency_statu: unimportant
+  last_modified: 2025-03-17 01:25:56
+--------------------------------------------------
+待办事项:
+  todo_id: 7
+  user_id: 67619984
+  start_time: 2025-03-27 13:46:56
+  end_time: 2025-03-29 14:46:56
+  location: 广州越秀
+  todo_content: 取快递4
+  todo_statu: doing
+  urgency_statu: unimportant
+  last_modified: 2025-03-17 02:25:56
+--------------------------------------------------
