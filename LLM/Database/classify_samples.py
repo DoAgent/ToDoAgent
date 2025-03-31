@@ -36,21 +36,21 @@ if AZURE_OPENAI_ENDPOINT.strip() and AZURE_OPENAI_API_KEY.strip() and AZURE_DEPL
     openai.api_key = AZURE_OPENAI_API_KEY
     openai.api_version = "2023-05-15"  # 可能需要根据实际情况调整
 
-# 定义正样本的标准（根据mvp三类案例）
+# 定义TruePositive的标准（根据mvp三类案例）
 def define_positive_sample_criteria():
     """
-    定义正样本的标准
-    根据搜索结果，正样本被定义为"mvp三类案例"，但没有找到具体定义
+    定义TruePositive的标准
+    根据搜索结果，TruePositive被定义为"mvp三类案例"，但没有找到具体定义
     这里我们定义一些可能的标准，实际使用时可以根据需求调整
     """
     return """
-    请判断以下消息是否属于正样本。正样本定义为与任务管理、待办事项、提醒、通知筛选相关的有用信息，具体包括：
+    请判断以下消息是否属于TruePositive。TruePositive定义为与任务管理、待办事项、提醒、通知筛选相关的有用信息，具体包括：
     1. 包含明确的任务、待办事项或需要完成的工作
     2. 包含时间安排、截止日期或日程提醒
     3. 包含项目进展、状态更新或工作报告
     
-    如果消息符合以上任一条件，则为正样本；否则为负样本。
-    请只回答"正样本"或"负样本"。
+    如果消息符合以上任一条件，则为TruePositive；否则为TrueNegative。
+    请只回答"TruePositive"或"TrueNegative"。
     """
 
 # 使用大模型API进行分类
@@ -65,10 +65,10 @@ def classify_with_llm(message, criteria, max_retries=3, retry_delay=2):
         retry_delay: 重试延迟（秒）
         
     Returns:
-        str: "正样本" 或 "负样本"
+        str: "TruePositive" 或 "TrueNegative"
     """
     prompt = f"{criteria}\n\n消息内容: {message}"
-    system_message = "你是一个专业的数据分类助手，根据给定标准判断消息是正样本还是负样本。"
+    system_message = "你是一个专业的数据分类助手，根据给定标准判断消息是TruePositive还是TrueNegative。"
     
     for attempt in range(max_retries):
         try:
@@ -107,10 +107,10 @@ def classify_with_llm(message, criteria, max_retries=3, retry_delay=2):
             result = response_data["choices"][0]["message"]["content"].strip()
             
             # 标准化结果
-            if "正样本" in result:
-                return "正样本"
+            if "TruePositive" in result:
+                return "TruePositive"
             else:
-                return "负样本"
+                return "TrueNegative"
                 
         except Exception as e:
             if attempt < max_retries - 1:
@@ -146,7 +146,7 @@ def batch_process_messages(messages, batch_size=10, delay=1):
                 classification = classify_with_llm(msg["content"], criteria)
                 msg["classification"] = classification
             else:
-                msg["classification"] = "负样本"  # 默认短消息为负样本
+                msg["classification"] = "TrueNegative"  # 默认短消息为TrueNegative
                 
             batch_results.append(msg)
             
@@ -199,11 +199,11 @@ def main():
     print("开始处理消息...")
     classified_messages = batch_process_messages(messages)
     
-    # 分离正负样本
-    positive_samples = [msg for msg in classified_messages if msg.get("classification") == "正样本"]
-    negative_samples = [msg for msg in classified_messages if msg.get("classification") == "负样本"]
+    # 分离TruePositive from TrueNegative
+    positive_samples = [msg for msg in classified_messages if msg.get("classification") == "TruePositive"]
+    negative_samples = [msg for msg in classified_messages if msg.get("classification") == "TrueNegative"]
     
-    print(f"分类完成: 正样本 {len(positive_samples)} 条, 负样本 {len(negative_samples)} 条")
+    print(f"分类完成: TruePositive {len(positive_samples)} 条, TrueNegative {len(negative_samples)} 条")
     
     # 保存结果
     if input_file.endswith(".json"):

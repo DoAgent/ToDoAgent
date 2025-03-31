@@ -8,6 +8,7 @@ import sys
 import json
 from datetime import datetime
 import re
+import os
 
 # 设置输出编码
 sys.stdout.reconfigure(encoding='utf-8')
@@ -154,7 +155,13 @@ if __name__ == "__main__":
     )
 
     print(json.dumps(data_result, ensure_ascii=False, indent=4, cls=DateTimeEncoder))
+    # Save data to Messages.json
+    file_path = "./Database/Messages.json"
+    with open(file_path, "w") as file:
+        json.dump(data_result, file, ensure_ascii=False, indent=4, cls=DateTimeEncoder)
 
+    # Print the file path
+    print(f"Data saved to: {os.path.abspath(file_path)}")
 
 
 
