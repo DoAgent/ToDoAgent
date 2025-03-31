@@ -57,7 +57,7 @@ def get_llm():
     return client
 
 
-def send_llm(messages: list[dict[str, str]], model: Optional[str] = None):
+def send_llm(messages: list[dict[str, str]], model: Optional[str] = None, resp_json=False):
     """调用LLM"""
 
     config = CONFIG["openai"]
@@ -65,11 +65,19 @@ def send_llm(messages: list[dict[str, str]], model: Optional[str] = None):
     if model is None:
         model = config["model"]
 
-    completion = LLM.chat.completions.create(
-        model=model,  # 选择模型
-        messages=messages,
-        temperature=0,  # 为提高准确率，温度为0
-    )
+    if resp_json:
+        completion = LLM.chat.completions.create(
+            model=model,  # 选择模型
+            messages=messages,
+            temperature=0,  # 为提高准确率，温度为0
+            response_format={ "type": "json_object" },
+        )
+    else:
+        completion = LLM.chat.completions.create(
+            model=model,  # 选择模型
+            messages=messages,
+            temperature=0,  # 为提高准确率，温度为0
+        )
 
     return completion.choices[0].message.content
 
@@ -86,26 +94,66 @@ def send_llm_with_prompt(query):
     with open("prompt.txt", encoding="utf-8") as f:
         text = f.read()
 
+    system = '''
+你是一个专业的短信事项提取助手，我将提供给你一组短信数组，请严格按照以下规则从短信数据中提取TODO事项：
+# 提取原则
+只提取需要用户执行后续操作的以下类型事项：
+- 会议
+- 充值缴费
+- 账单还款
+- 快递收取
+# 特殊要求
+凡是出现'日程邀请'或者'邀请你加入视频会议'或者'发起一个视频会议'都属于会议
+
+# 必须过滤的情况
+❌ 营销推广（含链接/优惠信息）
+❌ 聊天问候（节日祝福/天气提醒）
+❌ 状态通知（账单已支付/快递已签收）
+
+
+# 输出格式（JSON）
+{
+    "todo_list": [
+        {
+            "todo": "事项名称，具体行动+关键要素（如还款金额/会议时间/快递公司）",
+            "level": "重要程度，紧急（有截止时间且<24h）/重要/常规",
+            "type":"会议/充值缴费/账单还款/快递收取",
+            "time": "事件具体时间（按YYYY-MM-DD HH:mm转换），若无则'尽快'",
+            "app_name": "原始app_name",
+            "message_id": "原始消息唯一标识message_id"
+        },
+        ...
+    ]
+}
+
+# 输入
+我将提供给你一组短信json数组，里面包括了app_name、message_id、content、date等字段，请你根据以上规则进行分析，输出json格式的结果。
+
+# 输入示例
+正向案例："【菜鸟驿站】取件码7781，顺丰快递请19:00前至3号楼快递柜取件"
+负面案例："【中国银行】您尾号8879的账户余额1829.34元"（过滤余额通知）
+
+
+```
+
+'''
+
     messages = [
         {
             "role": "system",
-            "content": "你是一个擅长语义分析的短信分析助手，能够从海量的短信息中忽略营销推广、例行通知、余额大于0通知、简单问候，日常聊天"
-                       "帮助收件人赛选出有帮助并需要下一步操作的信息。"
-                       "特别是会议、开会、生活充值（水电燃气电话费）、账单付款欠款、包裹收取事项。"
-                       "对于你无法确定的信息，请优先为需要处理的待办事项。"
-                       "对于判断需要代办的事项，输出：事项名称（5-20字，尽量详细直观）、重要程度、计划时间（日期+时间 或尽快）、来源App、关联消息ID",
+            "content": system,
         },
         {
             "role": "user",
-            "content": f"```{text}```，这是一些人工标注数据可用作为参考，其中负样本是可无用信息",
+            "content": f"```{text}```，这是一些人工标注数据可进作为进一步参考",
         },
         {
             "role": "user",
-            "content": str(query),
+            "content": "这是本次要处理的数据:"+str(query),
         },
     ]
 
-    return send_llm(messages)
+    return send_llm(messages,resp_json=True)
 
 
 ###### init #####
