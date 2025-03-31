@@ -1,4 +1,0 @@
-openai
-pyyaml
-pymysql
-black
