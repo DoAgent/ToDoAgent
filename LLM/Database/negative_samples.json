@@ -1,0 +1,56 @@
+[
+  {
+    "sender": "备忘录",
+    "content": "[23条]M丶D: 1000本链接: https://pan.baidu.com/s/13dV3m54iGE8oWgYtkARQPw?pwd=vwq3 提取码: vwq3 复制这段内容后打开百度网盘手机App，操作更方便哦",
+    "app_name": "com.tencent.mm",
+    "message_id": 317222108,
+    "user_id": 67619984,
+    "date": "17/3/2025 22:21:59",
+    "classification": "负样本"
+  },
+  {
+    "sender": "备忘录",
+    "content": "[26条]M丶D: https://www.promptingguide.ai/zh",
+    "app_name": "com.tencent.mm",
+    "message_id": 317222109,
+    "user_id": 67619984,
+    "date": "17/3/2025 22:21:59",
+    "classification": "负样本"
+  },
+  {
+    "sender": "ASAP Azure ToDoAgent",
+    "content": "萤光@你: @Manda 黄老师，加油",
+    "app_name": "com.ss.android.lark",
+    "message_id": 317223616,
+    "user_id": 67619984,
+    "date": "17/3/2025 22:36:34",
+    "classification": "负样本"
+  },
+  {
+    "sender": "备忘录",
+    "content": "[55条]M丶D: https://www.promptingguide.ai/zh",
+    "app_name": "com.tencent.mm",
+    "message_id": 317225006,
+    "user_id": 67619984,
+    "date": "18/3/2025 06:50:06",
+    "classification": "负样本"
+  },
+  {
+    "sender": "ASAP Azure ToDoAgent",
+    "content": "萤光: 你改变了表结杨",
+    "app_name": "com.ss.android.lark",
+    "message_id": 317230315,
+    "user_id": 67619984,
+    "date": "18/3/2025 07:03:58",
+    "classification": "负样本"
+  },
+  {
+    "sender": "ASAP Azure ToDoAgent",
+    "content": "萤光: 果然表结构一旦发生变化，整的代码有一部分需要改",
+    "app_name": "com.ss.android.lark",
+    "message_id": 317233804,
+    "user_id": 67619984,
+    "date": "17/3/2025 23:38:30",
+    "classification": "负样本"
+  }
+]
