@@ -133,7 +133,7 @@ class MessageProcessor:
         return self.all_data
     
     # UsePhi4RAG_Step 2: Retrieve relevant documents from Azure AI Search
-    def retrieve_documents(query: str, top: int = 3):
+    def retrieve_documents(self, query: str, top: int = 3):
         vector_query = VectorizableTextQuery(text=query, k_nearest_neighbors=top, fields="text_vector")
         results = search_client.search(search_text=query, vector_queries=[vector_query], select=["content"], top=top)    
         return [doc["content"] for doc in results]
@@ -141,7 +141,7 @@ class MessageProcessor:
         ## Example for Muli-modal search if you have a text_vector AND image_vector field in your vector_index
         ## NOTE, image vectorization is in preview at the time of writing this code, please use azure-search-documents pypi version >11.6.0b6 
         # def retrieve_documents_multimodal(query: str, image_url: str, top: int = 3):
-        #     text_vector_query = VectorizableTextQuery(
+        #     text_vector_query = VectorizableTextQuery(``
         #         text=query,
         #         k_nearest_neighbors=top,
         #         fields="text_vector",
@@ -162,10 +162,21 @@ class MessageProcessor:
         #     )
         #     return [doc["content"] for doc in results]
 
-    # UsePhi4RAG_Step 3: Generate a multimodal RAG-based answer using retrieved text and an image input
-    def generate_multimodal_rag_response(query: str, image_url: str):
-        # Retrieve text context from search
+    # UsePhi4RAG_Step 3: Generate a  RAG-based answer using retrieved text and an image input
+
+    # Pure Text
+    def generate_rag_response(query: str):
         docs = retrieve_documents(query)
+        context = "\n---\n".join(docs)
+        prompt = f"""You are a helpful assistant. Use only the following context to answer the question. If the answer isn't in the context, say 'I don't know'.
+        Context: {context} Question: {query} Answer:"""
+        response = chat_client.complete(messages=[UserMessage(content=prompt)])
+        return response.choices[0].message.content
+
+    # multimodal
+    def generate_multimodal_rag_response(self, query: str, image_url: str):  # Add 'self' as the first parameter
+        # Retrieve text context from search
+        docs = self.retrieve_documents(query)  # Use 'self.' to call the instance method
         context = "\n---\n".join(docs)
 
         # Build a prompt that combines the retrieved context with the user query
@@ -217,9 +228,16 @@ class MessageProcessor:
 
         
         user_query = ICL_prompt + json.dumps(raw_notification, ensure_ascii=False, indent=4, cls=DateTimeEncoder) + RAG_prompt
-        sample_image_url = "https://images.unsplash.com/photo-1542291026-7eec264c27ff?q=80&w=1770&auto=format&fit=crop&ixlib=rb-4.0.3"
-        answer = self.generate_multimodal_rag_response(user_query, sample_image_url)
-        print(f"Q: {user_query}\nA: {answer}")
+
+        print(f"Q: {user_query}")
+
+        # sample_image_url = "https://images.unsplash.com/photo-1542291026-7eec264c27ff?q=80&w=1770&auto=format&fit=crop&ixlib=rb-4.0.3"
+        # answer = generate_multimodal_rag_response(user_query, sample_image_url)
+        # print(f"Q: {user_query}\nA: {answer}")
+
+        answer = generate_rag_response(user_query)
+        
+        print("A: {answer}")
 
         
         
