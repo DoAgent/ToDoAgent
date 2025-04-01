@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>首页 - TodoList</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .task-item {
+            transition: all 0.3s ease;
+        }
+        .task-item:active {
+            transform: scale(0.98);
+        }
+        .bottom-nav {
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <div class="h-full flex flex-col">
+        <!-- 顶部搜索栏 -->
+        <div class="p-4 bg-white shadow-sm">
+            <div class="flex items-center bg-gray-100 rounded-full px-4 py-2">
+                <i class="fas fa-search text-gray-400"></i>
+                <input type="text" placeholder="搜索任务..." class="ml-2 bg-transparent w-full outline-none">
+            </div>
+        </div>
+
+        <!-- 任务类别 -->
+        <div class="px-4 py-3 flex space-x-2 overflow-x-auto">
+            <button class="px-4 py-2 bg-blue-500 text-white rounded-full text-sm">全部</button>
+            <button class="px-4 py-2 bg-white text-gray-600 rounded-full text-sm shadow">今天</button>
+            <button class="px-4 py-2 bg-white text-gray-600 rounded-full text-sm shadow">重要</button>
+            <button class="px-4 py-2 bg-white text-gray-600 rounded-full text-sm shadow">已完成</button>
+        </div>
+
+        <!-- 任务列表 -->
+        <div class="flex-1 overflow-y-auto px-4 py-2">
+            <!-- 任务项 -->
+            <div class="task-item bg-white p-4 rounded-xl shadow-sm mb-3">
+                <div class="flex items-center">
+                    <div class="w-6 h-6 border-2 border-blue-500 rounded-full flex items-center justify-center">
+                        <div class="w-3 h-3 bg-blue-500 rounded-full"></div>
+                    </div>
+                    <div class="ml-3 flex-1">
+                        <h3 class="font-medium">完成产品设计文档</h3>
+                        <p class="text-sm text-gray-500">今天 14:00</p>
+                    </div>
+                    <div class="w-8 h-8 bg-blue-50 rounded-full flex items-center justify-center">
+                        <i class="fas fa-star text-blue-500"></i>
+                    </div>
+                </div>
+            </div>
+
+            <div class="task-item bg-white p-4 rounded-xl shadow-sm mb-3">
+                <div class="flex items-center">
+                    <div class="w-6 h-6 border-2 border-gray-300 rounded-full"></div>
+                    <div class="ml-3 flex-1">
+                        <h3 class="font-medium">团队周会</h3>
+                        <p class="text-sm text-gray-500">明天 10:00</p>
+                    </div>
+                    <div class="w-8 h-8 bg-gray-50 rounded-full flex items-center justify-center">
+                        <i class="far fa-star text-gray-400"></i>
+                    </div>
+                </div>
+            </div>
+
+            <div class="task-item bg-white p-4 rounded-xl shadow-sm mb-3">
+                <div class="flex items-center">
+                    <div class="w-6 h-6 border-2 border-gray-300 rounded-full"></div>
+                    <div class="ml-3 flex-1">
+                        <h3 class="font-medium">准备项目演示</h3>
+                        <p class="text-sm text-gray-500">周五 16:30</p>
+                    </div>
+                    <div class="w-8 h-8 bg-gray-50 rounded-full flex items-center justify-center">
+                        <i class="far fa-star text-gray-400"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 添加任务按钮 -->
+        <div class="absolute bottom-20 right-4">
+            <button class="w-14 h-14 bg-blue-500 rounded-full shadow-lg flex items-center justify-center">
+                <i class="fas fa-plus text-white text-xl"></i>
+            </button>
+        </div>
+
+        <!-- 底部导航栏 -->
+        <div class="bottom-nav bg-white/80 border-t border-gray-200 py-2 px-6">
+            <div class="flex justify-between items-center">
+                <button class="flex flex-col items-center text-blue-500">
+                    <i class="fas fa-home text-xl"></i>
+                    <span class="text-xs mt-1">首页</span>
+                </button>
+                <button class="flex flex-col items-center text-gray-400">
+                    <i class="fas fa-calendar text-xl"></i>
+                    <span class="text-xs mt-1">日历</span>
+                </button>
+                <button class="flex flex-col items-center text-gray-400">
+                    <i class="fas fa-chart-bar text-xl"></i>
+                    <span class="text-xs mt-1">统计</span>
+                </button>
+                <button class="flex flex-col items-center text-gray-400">
+                    <i class="fas fa-user text-xl"></i>
+                    <span class="text-xs mt-1">我的</span>
+                </button>
+            </div>
+        </div>
+    </div>
+</body>
+</html> 

@@ -1,0 +1,14 @@
+<resources>
+    <string name="app_name">ToDoAgent</string>
+    <string name="navigation_drawer_open">Open navigation drawer</string>
+    <string name="navigation_drawer_close">Close navigation drawer</string>
+    <string name="nav_header_title">Android Studio</string>
+    <string name="nav_header_subtitle">android.studio@android.com</string>
+    <string name="nav_header_desc">Navigation header</string>
+
+    <string name="menu_today">今日待办</string>
+    <string name="menu_important">重要任务</string>
+    <string name="menu_all">所有任务</string>
+    <string name="menu_finished">已完成</string>
+    <string name="menu_search">搜索</string>
+</resources>
