@@ -4,25 +4,40 @@ import yaml
 import pymysql
 from openai import OpenAI
 
-
 def read_config(yaml_file):
     """从yaml文件读取配置"""
     with open(yaml_file, "r", encoding="utf-8") as f:
         return yaml.safe_load(f)
 
 
+import mysql.connector
+import os
+from pathlib import Path
+
+
 def get_db_conn():
-    """获取复用数据库链接"""
+    """获取复用数据库链接 (Azure MySQL) """
     config = CONFIG["mysql"]
-    conn = pymysql.connect(
+
+    # 获取 SSL 证书路径
+    current_dir = Path(__file__).parent.absolute()
+    ssl_ca_path = current_dir / "DigiCertGlobalRootCA.crt.pem"
+
+    # 确保 SSL 证书文件存在
+    if not ssl_ca_path.exists():
+        raise FileNotFoundError(f"SSL 证书文件未找到: {ssl_ca_path}")
+
+    # 建立数据库连接
+    conn = mysql.connector.connect(
         host=config["host"],
-        port=config["port"],
+        port=config.get("port", 3306),
         user=config["user"],
         password=config["password"],
         database=config["database"],
-        charset="utf8mb4",
-        cursorclass=pymysql.cursors.DictCursor,  # 使用字典cursor方便获取数据
+        ssl_ca=str(ssl_ca_path),
+        ssl_disabled=False
     )
+
     return conn
 
 
