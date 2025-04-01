@@ -1,180 +1,137 @@
-#!/usr/bin/env python
-# -*- coding:utf-8 -*-
-
-import mysql.connector
-from mysql.connector import Error
-from typing import List, Dict, Any, Optional
-import sys
+import asyncio
+from aiomysql import create_pool, DictCursor
+from typing import AsyncGenerator, Dict, Any
+from tqdm import tqdm   # 设置一个进度条，方便管理数据连接状态
 import json
 from datetime import datetime
-import re
+import sys
 
-# 设置输出编码
 sys.stdout.reconfigure(encoding='utf-8')
 
-class DatabaseConfig:
-    """数据库配置类"""
+class AsyncDatabaseConfig:
+    """异步数据库配置类"""
     def __init__(self, host: str, database: str, password: str):
         self.config = {
             "host": host,
             "port": 3306,
-            "database": database,
+            "db": database,
             "user": "root",
             "password": password,
             "charset": "utf8mb4",
-            "use_unicode": True
+            "cursorclass": DictCursor,
+            "autocommit": True
         }
 
-class DateTimeEncoder(json.JSONEncoder):
-    """处理datetime对象的JSON编码器"""
-    def default(self, obj):
-        if isinstance(obj, datetime):
-            return obj.isoformat()
-        return super().default(obj)
-
-class DatabaseHandler:
-    """数据库处理类"""
-    def __init__(self, config: DatabaseConfig):
+class AsyncDatabaseHandler:
+    """异步数据库处理器"""
+    def __init__(self, config: AsyncDatabaseConfig):
         self.config = config.config
-        self.connection = None
+        self.pool = None
 
-    def connect(self) -> bool:
-        """建立数据库连接"""
+    async def create_pool(self, pool_size: int = 10):
+        """创建连接池"""
         try:
-            self.connection = mysql.connector.connect(**self.config)
-            if self.connection.is_connected():
-                # 设置连接的字符编码
-                cursor = self.connection.cursor(dictionary=True)
-                cursor.execute('SET NAMES utf8mb4')
-                cursor.execute('SET CHARACTER SET utf8mb4')
-                cursor.execute('SET character_set_connection=utf8mb4')
-                cursor.close()
-                return True
+            self.pool = await create_pool(
+                minsize=1,
+                maxsize=pool_size,
+                **self.config
+            )
+            return True
+        except Exception as e:
+            print(f"连接池创建失败: {e}")
             return False
-        except Error as e:
-            print(f"数据库连接错误: {e}")
-            return False
+        
 
-    def get_all_tables(self) -> List[str]:
-        """获取所有表名"""
-        try:
-            if not self.connection or not self.connection.is_connected():
-                print("数据库未连接")
-                return []
-            
-            cursor = self.connection.cursor(dictionary=True)
-            cursor.execute("SHOW TABLES")
-            tables = cursor.fetchall()
-            cursor.close()
-            return [table[list(table.keys())[0]] for table in tables]
-        except Error as e:
-            print(f"获取表名错误: {e}")
-            return []
+    async def get_total_count(self) -> int:
+        """获取消息总数（带缓存）"""
+        async with self.pool.acquire() as conn:
+            async with conn.cursor() as cursor:
+                await cursor.execute("SELECT COUNT(*) as total FROM Messages")
+                result = await cursor.fetchone()
+                return result['total'] if result else 0
 
-    def fetch_table_data(self, table_name: str) -> List[Dict]:
-        """获取表数据"""
-        try:
-            if not self.connection or not self.connection.is_connected():
-                print("数据库未连接")
-                return []
-            
-            cursor = self.connection.cursor(dictionary=True)
-            cursor.execute(f"SELECT * FROM `{table_name}`")
-            rows = cursor.fetchall()
-            cursor.close()
-            return rows
-        except Error as e:
-            print(f"获取{table_name}表数据错误: {e}")
-            return []
+    async def stream_messages(self, batch_size: int = 100) -> AsyncGenerator[Dict[str, Any], None]:
+        """流式获取消息数据"""
+        offset = 0
+        total = await self.get_total_count()
 
-    def fetch_messages_data(self) -> List[Dict]:
-        """专门获取Messages表的数据，只返回指定字段"""
-        try:
-            if not self.connection or not self.connection.is_connected():
-                print("数据库未连接")
-                return []
-            
-            cursor = self.connection.cursor(dictionary=True)
-            cursor.execute("""
-                SELECT 
-                    sender,
-                    content,
-                    app_name,
-                    message_id,
-                    user_id,
-                    date
-                FROM Messages
-            """)
-            rows = cursor.fetchall()
-            cursor.close()
-            return rows
-        except Error as e:
-            print(f"获取Messages表数据错误: {e}")
-            return []
+        with tqdm(total=total, desc="🚀 异步数据流", unit="msg", 
+                 bar_format="{l_bar}{bar}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}]") as pbar:
+                    while offset < total:
+                        async with self.pool.acquire() as conn:
+                            async with conn.cursor() as cursor:
+                                try:
+                                    await cursor.execute(
+                                    f"SELECT * FROM Messages LIMIT {batch_size} OFFSET {offset}"
+                                    )
+                                    batch = await cursor.fetchall()
+                                    if not batch:
+                                        break
+                                    # 动态更新偏移量
+                                    actual_size = len(batch)
+                                    offset += actual_size
+                                    pbar.update(actual_size)
+                            
+                                    for row in batch:
+                                        yield {
+                                        "message_id": str(row["message_id"]),
+                                        "user_id": str(row["user_id"]),
+                                        "content": row["content"][:500],  # 内存保护
+                                        "sender": row.get("sender"),
+                                        "app_name": row.get("app_name"),
+                                        "date": row["date"].isoformat() if row.get("date") else None,
+                                        "urgency": row.get("urgency"),
+                                        }
+                                except Exception as e:
+                                    print(f"🌀 查询异常: {e}")
+                                    await asyncio.sleep(1)  # 错误冷却
+                            
+                    
 
-    def close(self):
-        """关闭数据库连接"""
-        if self.connection and self.connection.is_connected():
-            self.connection.close()
+    async def close(self):
+        """关闭连接池"""
+        if self.pool:
+            self.pool.close()
+            await self.pool.wait_closed()
 
-def main(host, database, password, result=None) -> List[Dict[str, Any]]:
-    """主函数 - 返回消息列表   这个可以获取数据库中的全部消息"""
-    
-    # 初始化数据库处理器
-    db_config = DatabaseConfig(
+async def async_main(host: str, database: str, password: str):
+    """异步主函数"""
+    db_config = AsyncDatabaseConfig(
         host=host,
         database=database,
         password=password
     )
-    db_handler = DatabaseHandler(db_config)
     
-    # 连接数据库
-    if not db_handler.connect():
-        print("数据库连接失败")
-        return []
+    handler = AsyncDatabaseHandler(db_config)
+    if not await handler.create_pool(pool_size=5):
+        return {}
 
+    result = {}
     try:
-        # 获取Messages表数据
-        messages = db_handler.fetch_messages_data()
-        return messages  # 直接返回消息列表
-
-    except Error as e:
-        print(f"处理数据时出错: {e}")
-        return []
-    
+        async for message in handler.stream_messages():
+            # 此处可以添加实时处理逻辑
+            result[message["message_id"]] = message
+            
+            # 实时输出进度（每100条更新）
+            if len(result) % 100 == 0:
+                print(f"\r已处理 {len(result)} 条消息", end="")
+                
+        return result
     finally:
-        db_handler.close()
-
+        await handler.close()
 
 if __name__ == "__main__":
-    data_result = main(
-        host="103.116.245.150",
-        database="ToDoAgent",
-        password="4bc6bc963e6d8443453676"
-    )
-
-    print(json.dumps(data_result, ensure_ascii=False, indent=4, cls=DateTimeEncoder))
-
-
-
-
-
-
-
-
-"""
- list_id 
- user_id 
- start_time 
- end_time
- location 
- todo_content
- last_modified
- done 
-
-todo_content：待办事项内容
-last_modified：最后修改时间
-done：已完成
-"""
-
-
+    async def run():
+        data = await async_main(
+            host="103.116.245.150",
+            database="ToDoAgent",
+            password="4bc6bc963e6d8443453676"
+        )
+        # print("\n最终结果示例：")
+        # print(json.dumps(
+            # dict(list(data.items())[:10]),  
+            # ensure_ascii=False, 
+            # indent=2
+        # ))
+    
+    asyncio.run(run())
