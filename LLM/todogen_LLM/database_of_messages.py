@@ -1,12 +1,10 @@
-import mysql.connector
-from mysql.connector import Error
-from typing import List, Dict, Any, Optional
-import sys
+import asyncio
+from aiomysql import create_pool, DictCursor
+from typing import AsyncGenerator, Dict, Any
+from tqdm import tqdm   # 设置一个进度条，方便管理数据连接状态
 import json
 from datetime import datetime
-import re
-import os
-
+import sys
 
 sys.stdout.reconfigure(encoding='utf-8')
 
@@ -123,41 +121,17 @@ async def async_main(host: str, database: str, password: str):
         await handler.close()
 
 if __name__ == "__main__":
-
-    data_result = main(
-        host="103.116.245.150",
-        database="ToDoAgent",
-        password="4bc6bc963e6d8443453676"
-    )
-
-    print(json.dumps(data_result, ensure_ascii=False, indent=4, cls=DateTimeEncoder))
-    # Save data to Messages.json
-    file_path = "./Database/Messages.json"
-    with open(file_path, "w") as file:
-        json.dump(data_result, file, ensure_ascii=False, indent=4, cls=DateTimeEncoder)
-
-    # Print the file path
-    print(f"Data saved to: {os.path.abspath(file_path)}")
-
-
-
-
-
-
-
-"""
- list_id 
- user_id 
- start_time 
- end_time
- location 
- todo_content
- last_modified
- done 
-
-todo_content：待办事项内容
-last_modified：最后修改时间
-done：已完成
-"""
-
-
+    async def run():
+        data = await async_main(
+            host="103.116.245.150",
+            database="ToDoAgent",
+            password="4bc6bc963e6d8443453676"
+        )
+        # print("\n最终结果示例：")
+        # print(json.dumps(
+            # dict(list(data.items())[:10]),  
+            # ensure_ascii=False, 
+            # indent=2
+        # ))
+    
+    asyncio.run(run())

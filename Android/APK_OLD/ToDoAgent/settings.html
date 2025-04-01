@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>设置 - TodoList</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-50">
+    <div class="h-full flex flex-col">
+        <!-- 顶部导航栏 -->
+        <div class="bg-white p-4 flex items-center justify-between shadow-sm">
+            <button class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-gray-100">
+                <i class="fas fa-arrow-left text-gray-600"></i>
+            </button>
+            <h1 class="text-lg font-semibold">设置</h1>
+            <div class="w-10 h-10"></div>
+        </div>
+
+        <!-- 设置列表 -->
+        <div class="flex-1 p-4">
+            <!-- 账号设置 -->
+            <div class="mb-6">
+                <h2 class="text-sm text-gray-500 mb-2 px-2">账号设置</h2>
+                <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+                    <!-- 未登录状态 -->
+                    <div id="not-logged-in" class="hidden">
+                        <div class="p-4 flex items-center justify-between">
+                            <div class="flex items-center">
+                                <div class="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center">
+                                    <i class="fas fa-user text-gray-400 text-xl"></i>
+                                </div>
+                                <div class="ml-3">
+                                    <div class="font-medium">未登录</div>
+                                    <div class="text-sm text-gray-500">登录后体验更多功能</div>
+                                </div>
+                            </div>
+                            <a href="login.html" class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600">
+                                登录/注册
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- 已登录状态 -->
+                    <div id="logged-in">
+                        <div class="flex items-center p-4 border-b">
+                            <img src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80" 
+                                 alt="用户头像" 
+                                 class="w-12 h-12 rounded-full">
+                            <div class="ml-3 flex-1">
+                                <div class="font-medium">张三</div>
+                                <div class="text-sm text-gray-500">ID: 12345678</div>
+                            </div>
+                            <i class="fas fa-chevron-right text-gray-400"></i>
+                        </div>
+                        <button class="flex items-center justify-between w-full p-4 hover:bg-gray-50">
+                            <div class="flex items-center">
+                                <div class="w-8 h-8 bg-blue-50 rounded-full flex items-center justify-center">
+                                    <i class="fas fa-shield-alt text-blue-500"></i>
+                                </div>
+                                <span class="ml-3">账号安全</span>
+                            </div>
+                            <i class="fas fa-chevron-right text-gray-400"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 通用设置 -->
+            <div class="mb-6">
+                <h2 class="text-sm text-gray-500 mb-2 px-2">通用设置</h2>
+                <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+                    <button class="flex items-center justify-between w-full p-4 hover:bg-gray-50 border-b">
+                        <div class="flex items-center">
+                            <div class="w-8 h-8 bg-purple-50 rounded-full flex items-center justify-center">
+                                <i class="fas fa-bell text-purple-500"></i>
+                            </div>
+                            <span class="ml-3">通知设置</span>
+                        </div>
+                        <i class="fas fa-chevron-right text-gray-400"></i>
+                    </button>
+                    <button class="flex items-center justify-between w-full p-4 hover:bg-gray-50 border-b">
+                        <div class="flex items-center">
+                            <div class="w-8 h-8 bg-red-50 rounded-full flex items-center justify-center">
+                                <i class="fas fa-mobile-alt text-red-500"></i>
+                            </div>
+                            <span class="ml-3">通知获取权限</span>
+                        </div>
+                        <div class="flex items-center">
+                            <span class="text-gray-500 mr-2">已开启 5 个</span>
+                            <i class="fas fa-chevron-right text-gray-400"></i>
+                        </div>
+                    </button>
+                    <div class="flex items-center justify-between p-4 border-b">
+                        <div class="flex items-center">
+                            <div class="w-8 h-8 bg-indigo-50 rounded-full flex items-center justify-center">
+                                <i class="fas fa-moon text-indigo-500"></i>
+                            </div>
+                            <span class="ml-3">深色模式</span>
+                        </div>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" class="sr-only peer">
+                            <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-500"></div>
+                        </label>
+                    </div>
+                    <button class="flex items-center justify-between w-full p-4 hover:bg-gray-50">
+                        <div class="flex items-center">
+                            <div class="w-8 h-8 bg-green-50 rounded-full flex items-center justify-center">
+                                <i class="fas fa-language text-green-500"></i>
+                            </div>
+                            <span class="ml-3">语言设置</span>
+                        </div>
+                        <div class="flex items-center">
+                            <span class="text-gray-500 mr-2">简体中文</span>
+                            <i class="fas fa-chevron-right text-gray-400"></i>
+                        </div>
+                    </button>
+                </div>
+            </div>
+
+            <!-- 其他设置 -->
+            <div class="mb-6">
+                <h2 class="text-sm text-gray-500 mb-2 px-2">其他设置</h2>
+                <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+                    <button class="flex items-center justify-between w-full p-4 hover:bg-gray-50 border-b">
+                        <div class="flex items-center">
+                            <div class="w-8 h-8 bg-yellow-50 rounded-full flex items-center justify-center">
+                                <i class="fas fa-question-circle text-yellow-500"></i>
+                            </div>
+                            <span class="ml-3">帮助与反馈</span>
+                        </div>
+                        <i class="fas fa-chevron-right text-gray-400"></i>
+                    </button>
+                    <button class="flex items-center justify-between w-full p-4 hover:bg-gray-50 border-b">
+                        <div class="flex items-center">
+                            <div class="w-8 h-8 bg-red-50 rounded-full flex items-center justify-center">
+                                <i class="fas fa-info-circle text-red-500"></i>
+                            </div>
+                            <span class="ml-3">关于我们</span>
+                        </div>
+                        <div class="flex items-center">
+                            <span class="text-gray-500 mr-2">v1.0.0</span>
+                            <i class="fas fa-chevron-right text-gray-400"></i>
+                        </div>
+                    </button>
+                    <button class="flex items-center justify-between w-full p-4 hover:bg-gray-50">
+                        <div class="flex items-center">
+                            <div class="w-8 h-8 bg-gray-50 rounded-full flex items-center justify-center">
+                                <i class="fas fa-sign-out-alt text-gray-500"></i>
+                            </div>
+                            <span class="ml-3 text-red-500">退出登录</span>
+                        </div>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 底部导航栏 -->
+        <div class="bottom-nav bg-white/80 border-t border-gray-200 py-2 px-6">
+            <div class="flex justify-between items-center">
+                <button class="flex flex-col items-center text-gray-400">
+                    <i class="fas fa-home text-xl"></i>
+                    <span class="text-xs mt-1">首页</span>
+                </button>
+                <button class="flex flex-col items-center text-gray-400">
+                    <i class="fas fa-calendar text-xl"></i>
+                    <span class="text-xs mt-1">日历</span>
+                </button>
+                <button class="flex flex-col items-center text-gray-400">
+                    <i class="fas fa-chart-bar text-xl"></i>
+                    <span class="text-xs mt-1">统计</span>
+                </button>
+                <button class="flex flex-col items-center text-blue-500">
+                    <i class="fas fa-user text-xl"></i>
+                    <span class="text-xs mt-1">我的</span>
+                </button>
+            </div>
+        </div>
+    </div>
+</body>
+</html> 
