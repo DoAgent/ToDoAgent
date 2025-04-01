@@ -91,52 +91,31 @@ def send_llm_with_query(query):
 
 
 def send_llm_with_prompt(query):
-    with open("prompt.txt", encoding="utf-8") as f:
-        text = f.read()
+    system = """
+    # 角色
+    你是一个专业的短信内容分析助手，根据输入判断内容的类型及可信度，为用户使用信息提供依据和便利。
 
-    system = '''
-你是一个专业的短信事项提取助手，我将提供给你一组短信数组，请严格按照以下规则从短信数据中提取TODO事项：
-# 提取原则
-只提取需要用户执行后续操作的以下类型事项：
-- 会议
-- 充值缴费
-- 账单还款
-- 快递收取
-# 特殊要求
-凡是出现'日程邀请'或者'邀请你加入视频会议'或者'发起一个视频会议'都属于会议
+    # 任务
+    对于输入的多条数据，分析每一条数据内容（主键：`message_id`）属于【物流取件、缴费充值、待付(还)款、会议邀约、其他】的可能性百分比。
+    内容只有包含“邀请你加入飞书视频会议”才算会议邀请，其他就不算会议邀请。
+    主要对于聊天、问候、回执、结果通知、上月账单等信息不需要收件人进行下一步处理的信息，直接归到其他类进行忽略
 
-# 必须过滤的情况
-❌ 营销推广（含链接/优惠信息）
-❌ 聊天问候（节日祝福/天气提醒）
-❌ 状态通知（账单已支付/快递已签收）
+    # 要求
+    1. 以json格式输出
+    2. content简洁提炼关键词，字符数<20以内
 
-
-# 输出格式（JSON）
-{
-    "todo_list": [
-        {
-            "todo": "事项名称，具体行动+关键要素（如还款金额/会议时间/快递公司）",
-            "level": "重要程度，紧急（有截止时间且<24h）/重要/常规",
-            "type":"会议/充值缴费/账单还款/快递收取",
-            "time": "事件具体时间（按YYYY-MM-DD HH:mm转换），若无则'尽快'",
-            "app_name": "原始app_name",
-            "message_id": "原始消息唯一标识message_id"
-        },
-        ...
+    # 输出示例
+    ```
+    [
+        {"message_id":"1111111","content":"账单805.57元待还",  "物流取件":0,"欠费缴纳":99, "待付(还)款":1: "会议邀约":0,"其他":0, "分类":"欠费缴纳"},
+        {"message_id":"222222","content":"邀请你加入飞书视频会议"，"物流取件":0,"欠费缴纳":0, "待付(还)款":1: "会议邀约":100,"其他":0, "分类":"会议"}
     ]
-}
 
-# 输入
-我将提供给你一组短信json数组，里面包括了app_name、message_id、content、date等字段，请你根据以上规则进行分析，输出json格式的结果。
+    ```
+        """
 
-# 输入示例
-正向案例："【菜鸟驿站】取件码7781，顺丰快递请19:00前至3号楼快递柜取件"
-负面案例："【中国银行】您尾号8879的账户余额1829.34元"（过滤余额通知）
-
-
-```
-
-'''
+    with open("prompt.txt", encoding="utf-8") as f:
+        tag_prompt = f.read()
 
     messages = [
         {
@@ -145,16 +124,80 @@ def send_llm_with_prompt(query):
         },
         {
             "role": "user",
-            "content": f"```{text}```，这是一些人工标注数据可进作为进一步参考",
+            "content": f"```{tag_prompt}```这是一些人工标注数据，其中FALSE表示`其他`类，接下来我会输入本次要处理的数据：",
         },
         {
             "role": "user",
-            "content": "这是本次要处理的数据:"+str(query),
+            "content": str(query),
         },
     ]
+    return send_llm(messages)
 
-    return send_llm(messages,resp_json=True)
+def save_to_mysql(data):
+    """新增：保存数据到MySQL"""
+    # 字段映射关系（中文键名 → 数据库英文列名）
+    COLUMN_MAPPING = {
+        "message_id": "message_id",
+        "content": "content",
+        "物流取件": "logistics_pickup",
+        "欠费缴纳": "overdue_payment",
+        "待付(还)款": "pending_payment",
+        "会议邀约": "meeting_invitation",
+        "其他": "other",
+        "分类": "category"
+    }
 
+    # 连接 MySQL 数据库
+    conn = get_db_conn()
+
+    try:
+        with conn.cursor() as cursor:
+            # 构造插入 SQL
+            sql = f"""
+            INSERT INTO message_stats 
+            ({', '.join(COLUMN_MAPPING.values())})
+            VALUES ({', '.join(['%s'] * len(COLUMN_MAPPING))})
+            """
+
+            # 转换数据格式（按映射顺序提取值）
+            values = []
+            for item in data:
+                # 确保 content 字段的值是字符串，并处理特殊字符
+                item["content"] = str(item["content"]).encode('utf-8').decode('utf-8', errors='ignore')
+                row = [item[key] for key in COLUMN_MAPPING.keys()]
+                values.append(row)
+
+            # 批量插入
+            cursor.executemany(sql, values)
+            conn.commit()
+            print(f"成功插入 {cursor.rowcount} 条数据到 message_stats")
+
+            # 构造插入 filter_message 表的 SQL
+            filter_sql = """
+            INSERT INTO filter_message (message_id, content)
+            VALUES (%s, %s)
+            """
+
+            # 提取符合条件的 message_id 和 content
+            filter_values = []
+            for item in data:
+                if item["分类"] != "其他":
+                    filter_values.append((item["message_id"], item["content"]))
+
+            # 批量插入到 filter_message 表
+            if filter_values:
+                cursor.executemany(filter_sql, filter_values)
+                conn.commit()
+                print(f"成功插入 {cursor.rowcount} 条数据到 filter_message 表")
+            else:
+                print("没有符合条件的数据，跳过插入 filter_message 表")
+
+    except Exception as e:
+        conn.rollback()
+        print(f"数据插入失败: {e}")
+
+    finally:
+        conn.close()
 
 ###### init #####
 
