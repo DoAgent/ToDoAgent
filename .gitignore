@@ -31,3 +31,9 @@ google-services.json
 
 # Android Profiling
 *.hprof
+
+# SQL key
+LLM/DigiCertGlobalRootCA.crt.pem
+
+#trash files due to MacOS
+../.DS_Store
