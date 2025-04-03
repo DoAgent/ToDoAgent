@@ -74,7 +74,7 @@ def get_llm():
 
 def send_llm(messages: list[dict[str, str]], model: Optional[str] = None, resp_json=False):
     """调用LLM"""
-
+    print(">>>>>>>>>>>>>>>>>",messages)
     config = CONFIG["openai"]
 
     if model is None:
@@ -94,6 +94,7 @@ def send_llm(messages: list[dict[str, str]], model: Optional[str] = None, resp_j
             temperature=0,  # 为提高准确率，温度为0
         )
 
+    print("<<<<<",completion.choices[0].message.content)
     return completion.choices[0].message.content
 
 
@@ -112,25 +113,27 @@ def send_llm_with_prompt(query):
 
     # 任务
     对于输入的多条数据，分析每一条数据内容（主键：`message_id`）属于【物流取件、缴费充值、待付(还)款、会议邀约、其他】的可能性百分比。
-    内容只有包含“邀请你加入飞书视频会议”才算会议邀请，其他就不算会议邀请。
-    主要对于聊天、问候、回执、结果通知、上月账单等信息不需要收件人进行下一步处理的信息，直接归到其他类进行忽略
+    主要对于聊天、问候、回执、结果通知、上月账单等信息不需要收件人进行下一步处理的信息，直接归到其他类
 
     # 要求
     1. 以json格式输出
     2. content简洁提炼关键词，字符数<20以内
-
+    3. 重点关注prompt.txt文件作为正负样本训练
+    4. 输入条数和输出条数完全一样
+    
+    #注意事项
+    1. 预存话费享会员权益，算“其他”分类，不算“待付(还)款”分类
+    2. 扣权益小福券月包费，算“其他”分类，不算“缴费充值”分类
+    
     # 输出示例
     ```
     [
-        {"message_id":"1111111","content":"账单805.57元待还",  "物流取件":0,"欠费缴纳":99, "待付(还)款":1: "会议邀约":0,"其他":0, "分类":"欠费缴纳"},
-        {"message_id":"222222","content":"邀请你加入飞书视频会议"，"物流取件":0,"欠费缴纳":0, "待付(还)款":1: "会议邀约":100,"其他":0, "分类":"会议"}
+        {"message_id":"1111111","content":"账单805.57元待还","物流取件":0,"欠费缴纳":99,"待付(还)款":1: "会议邀约":0,"其他":0, "分类":"欠费缴纳"},
+        {"message_id":"222222","content":"邀请你加入飞书视频会议","物流取件":0,"欠费缴纳":0,"待付(还)款":1: "会议邀约":100,"其他":0, "分类":"会议"}
     ]
 
     ```
         """
-
-    with open("prompt.txt", encoding="utf-8") as f:
-        tag_prompt = f.read()
 
     messages = [
         {
@@ -139,17 +142,13 @@ def send_llm_with_prompt(query):
         },
         {
             "role": "user",
-            "content": f"```{tag_prompt}```这是一些人工标注数据，其中FALSE表示`其他`类，接下来我会输入本次要处理的数据：",
-        },
-        {
-            "role": "user",
             "content": str(query),
-        },
+        }
     ]
     return send_llm(messages)
 
 def save_to_mysql(data):
-    """新增：保存数据到MySQL"""
+    """新增：保存数据到 MySQL"""
     # 字段映射关系（中文键名 → 数据库英文列名）
     COLUMN_MAPPING = {
         "message_id": "message_id",
@@ -162,58 +161,64 @@ def save_to_mysql(data):
         "分类": "category"
     }
 
-    # 连接 MySQL 数据库
+    BATCH_SIZE = 100  # 每次插入 100 行，减少锁冲突
     conn = get_db_conn()
 
     try:
         with conn.cursor() as cursor:
-            # 构造插入 SQL
             sql = f"""
             INSERT INTO message_stats 
             ({', '.join(COLUMN_MAPPING.values())})
             VALUES ({', '.join(['%s'] * len(COLUMN_MAPPING))})
+            ON DUPLICATE KEY UPDATE
+            {', '.join([f"{col} = VALUES({col})" for col in COLUMN_MAPPING.values() if col != 'message_id'])}
             """
 
-            # 转换数据格式（按映射顺序提取值）
             values = []
             for item in data:
-                # 确保 content 字段的值是字符串，并处理特殊字符
                 item["content"] = str(item["content"]).encode('utf-8').decode('utf-8', errors='ignore')
-                row = [item[key] for key in COLUMN_MAPPING.keys()]
+
+                # 规则 1: 会议 且 content 不包含 "邀请你加入飞书视频会议"，归类为 "其他"
+                if item.get("分类") == "会议" and "邀请你加入飞书视频会议" not in item.get("content", ""):
+                    item["分类"] = "其他"
+
+                # 规则 2: 欠费缴纳 且 content 包含 "缴费支出"，归类为 "其他"
+                if item.get("分类") == "欠费缴纳" and "缴费支出" in item.get("content", ""):
+                    item["分类"] = "其他"
+
+                row = [item.get(key, None) for key in COLUMN_MAPPING.keys()]
                 values.append(row)
 
-            # 批量插入
-            cursor.executemany(sql, values)
-            conn.commit()
-            print(f"成功插入 {cursor.rowcount} 条数据到 message_stats")
+            # 分批插入 message_stats
+            for i in range(0, len(values), BATCH_SIZE):
+                batch = values[i: i + BATCH_SIZE]
+                cursor.executemany(sql, batch)
+                conn.commit()
+                print(f"成功插入 {len(batch)} 条数据到 message_stats")
 
-            # 构造插入 filter_message 表的 SQL
+            # **3. 插入 `filter_message` 表，仅插入分类不等于“其他”的数据**
             filter_sql = """
-            INSERT INTO filter_message (message_id, content)
+            INSERT IGNORE INTO filter_message (message_id, content)
             VALUES (%s, %s)
             """
 
-            # 提取符合条件的 message_id 和 content
-            filter_values = []
-            for item in data:
-                if item["分类"] != "其他":
-                    filter_values.append((item["message_id"], item["content"]))
+            filter_values = [
+                (item.get("message_id"), item.get("content")) for item in data if item.get("分类") != "其他"
+            ]
 
-            # 批量插入到 filter_message 表
-            if filter_values:
-                cursor.executemany(filter_sql, filter_values)
+            # 分批插入 filter_message
+            for i in range(0, len(filter_values), BATCH_SIZE):
+                batch = filter_values[i: i + BATCH_SIZE]
+                cursor.executemany(filter_sql, batch)
                 conn.commit()
-                print(f"成功插入 {cursor.rowcount} 条数据到 filter_message 表")
-            else:
-                print("没有符合条件的数据，跳过插入 filter_message 表")
+                print(f"成功插入 {len(batch)} 条数据到 filter_message")
 
-    except Exception as e:
+    except pymysql.MySQLError as e:
         conn.rollback()
         print(f"数据插入失败: {e}")
 
     finally:
         conn.close()
-
 ###### init #####
 
 CONFIG = read_config("config.yaml")
