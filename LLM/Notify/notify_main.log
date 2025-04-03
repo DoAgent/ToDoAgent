@@ -1,0 +1,32 @@
+2025-04-03 11:16:36,674 - INFO - 启动定时任务程序
+2025-04-03 11:16:36,674 - INFO - 开始执行所有脚本
+2025-04-03 11:16:36,674 - INFO - 开始运行脚本: db2txt.py
+2025-04-03 11:16:36,738 - ERROR - 脚本 db2txt.py 运行失败
+2025-04-03 11:16:36,739 - ERROR - 错误:   File "db2txt.py", line 1
+    '''
+    ^
+SyntaxError: (unicode error) 'unicodeescape' codec can't decode bytes in position 204-205: malformed \N character escape
+
+2025-04-03 11:16:36,739 - INFO - 开始运行脚本: usrSpareTime.py
+2025-04-03 11:16:36,954 - ERROR - 脚本 usrSpareTime.py 运行失败
+2025-04-03 11:16:36,954 - ERROR - 错误: Traceback (most recent call last):
+  File "usrSpareTime.py", line 145, in <module>
+    main()
+  File "usrSpareTime.py", line 122, in main
+    print("\u6b63\u5728\u8fde\u63a5\u6570\u636e\u5e93...")
+  File "C:\Users\Manda\.conda\envs\ai_endpoint\lib\encodings\cp1252.py", line 19, in encode
+    return codecs.charmap_encode(input,self.errors,encoding_table)[0]
+UnicodeEncodeError: 'charmap' codec can't encode characters in position 0-6: character maps to <undefined>
+
+2025-04-03 11:16:36,964 - INFO - 开始运行脚本: compareDb2txt.py
+2025-04-03 11:16:37,142 - ERROR - 脚本 compareDb2txt.py 运行失败
+2025-04-03 11:16:37,143 - ERROR - 错误: Traceback (most recent call last):
+  File "compareDb2txt.py", line 144, in <module>
+    main()
+  File "compareDb2txt.py", line 104, in main
+    print("\u6b63\u5728\u8fde\u63a5\u6570\u636e\u5e93...")
+  File "C:\Users\Manda\.conda\envs\ai_endpoint\lib\encodings\cp1252.py", line 19, in encode
+    return codecs.charmap_encode(input,self.errors,encoding_table)[0]
+UnicodeEncodeError: 'charmap' codec can't encode characters in position 0-6: character maps to <undefined>
+
+2025-04-03 11:16:37,144 - INFO - 所有脚本执行完成

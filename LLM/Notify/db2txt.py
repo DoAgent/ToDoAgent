@@ -1,35 +1,40 @@
-import mysql.connector
+
+# '''
+# Author: mdhuang555 67590178+mdhuang555@users.noreply.github.com
+# Date: 2025-03-30 16:09:29
+# LastEditors: mdhuang555 67590178+mdhuang555@users.noreply.github.com
+# LastEditTime: 2025-04-03 11:02:35
+# FilePath: \Notify\db2txt.py
+# Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
+# '''
+from dataBaseConnecter import DatabaseConnector
+import sys
+import io
+sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
 import os
 from datetime import datetime
 
-def get_database_text(db_config: dict, table: str) -> list:
-    """直接从MySQL数据库获取数据"""
+def get_database_text(table: str) -> list:
+    """使用DatabaseConnector从数据库获取数据"""
     try:
-        # 直接连接MySQL数据库
-        conn = mysql.connector.connect(
-            host=db_config['host'],
-            user=db_config['user'],
-            password=db_config['password'],
-            database=db_config['database'],
-            charset='utf8mb4'
-        )
+        # 创建数据库连接器实例
+        db_connector = DatabaseConnector()
         
-        cursor = conn.cursor(dictionary=True)
-        
-        # 获取所有待办事项
-        cursor.execute(f"SELECT * FROM {table}")
-        results = cursor.fetchall()
-        
-        cursor.close()
-        conn.close()
-        
-        return results
-        
-    except mysql.connector.Error as e:
-        print(f"数据库错误: {e}")
-        return []
+        # 连接数据库
+        conn = db_connector.connect_db()
+        if not conn:
+            print("无法连接到数据库")
+            return []
+            
+        try:
+            # 使用连接器的extract_text方法获取数据
+            results = db_connector.extract_text(conn, table, '*')
+            return results
+        finally:
+            conn.close()
+            
     except Exception as e:
-        print(f"其他错误: {e}")
+        print(f"获取数据时发生错误: {e}")
         return []
 
 def save_todos_by_user(todos: list, output_dir: str = 'output'):
@@ -69,16 +74,8 @@ def save_todos_by_user(todos: list, output_dir: str = 'output'):
             print(f"保存用户 {user_id} 的数据时出错: {e}")
 
 def main():
-    # 数据库配置
-    db_config = {
-        'host': '103.116.245.150',
-        'user': 'root',
-        'password': '4bc6bc963e6d8443453676',
-        'database': 'ToDoAgent'
-    }
-
     print("正在连接数据库...")
-    todos = get_database_text(db_config, 'ToDoList')
+    todos = get_database_text('ToDoList')
     
     if todos:
         print(f"成功获取 {len(todos)} 条记录")

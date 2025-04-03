@@ -49,6 +49,14 @@ LLM/DigiCertGlobalRootCA.crt.pem
 .DS_Store
 /build
 /captures
+
+/LLM/Notify/config.yaml
+/LLM/Notify/DigiCertGlobalRootCA.crt.pem
+/LLM/Notify/gpt4o_llm2.py
+/LLM/Notify/compare_output
+/LLM/Notify/output
+/LLM/Notify/time_analysis
+
 .externalNativeBuild
 .cxx
 local.properties
