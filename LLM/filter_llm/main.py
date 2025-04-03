@@ -2,26 +2,29 @@
 import json
 import time
 from pathlib import Path
-from lib import save_to_mysql,execute_sql, send_llm_with_prompt
+from lib import save_to_mysql, execute_sql, send_llm_with_prompt, send_llm
 
 
 def get_message_with_page(page_num, page_size=50):
     """分页查询数据库（保持不变）"""
-    offset = page_num * page_size
+    offset = (page_num) * page_size
     sql = f"""
         SELECT content, app_name, message_id, `date`
         FROM Messages
         WHERE app_name in ('com.tencent.mm','SMS','com.ss.android.lark')
-        AND DATE(`date`) >= '2025-03-31'
-        /* and sender='ASAP Sample' */
+        AND DATE(`date`) >= '2025-03-31' 
+        and length(content)>50
+        and content not like '%可用余额%'
         LIMIT {page_size} OFFSET {offset};
     """
+    print("======", sql)
     return execute_sql(sql)
 
 
 def main():
     todo_list = []
-    for i in range(0,10):
+    """ 从0开始算分页 """
+    for i in range(0, 1):
         print(f'正在处理第 {i + 1}页数据')
         data = get_message_with_page(i)
         if not data:
@@ -33,10 +36,10 @@ def main():
         print('    ' + resp)
         print('    ' + '-' * 20)
 
-
         try:
             parsed_resp = json.loads(resp)
             todo_list.extend(parsed_resp)
+            print(f'{len({todo_list})=}')
         except Exception as e:
             print(f"解析响应失败: {e}")
 
@@ -49,4 +52,5 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+     main()
+
