@@ -1,33 +1,56 @@
-'''
-Author: mdhuang555 67590178+mdhuang555@users.noreply.github.com
-Date: 2025-03-30 15:57:22
-LastEditors: mdhuang555 67590178+mdhuang555@users.noreply.github.com
-LastEditTime: 2025-03-30 16:18:55
-FilePath: \Notyif\dataBaseConnecter.py
-Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
-pip install mysql-connector-python
-'''
+# '''
+# Author: mdhuang555 67590178+mdhuang555@users.noreply.github.com
+# Date: 2025-03-30 15:57:22
+# LastEditors: mdhuang555 67590178+mdhuang555@users.noreply.github.com
+# LastEditTime: 2025-04-03 11:32:30
+# FilePath: \Notyif\dataBaseConnecter.py
+# Description: 数据库连接器，支持SSL连接
+# '''
 import socket
 import json
 import mysql.connector
-from typing import Dict, Any
-
+from typing import Dict, Any, Optional
+import yaml
+from pathlib import Path
 
 class DatabaseConnector:
     def __init__(self, host: str = '103.116.245.150', port: int = 3306):
         self.host = host
         self.port = port
         self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.config = self._load_config()
         
-    def connect_db(self, db_config: Dict[str, Any]) -> mysql.connector.MySQLConnection:
-        """连接到MySQL数据库"""
+    def _load_config(self) -> Dict[str, Any]:
+        """加载配置文件"""
         try:
+            config_path = Path(__file__).parent / "config.yaml"
+            with open(config_path, "r", encoding="utf-8") as f:
+                return yaml.safe_load(f)
+        except Exception as e:
+            print(f"加载配置文件错误: {e}")
+            return {}
+        
+    def connect_db(self) -> Optional[mysql.connector.MySQLConnection]:
+        """连接到MySQL数据库，使用SSL连接"""
+        try:
+            # 获取SSL证书路径
+            current_dir = Path(__file__).parent.absolute()
+            ssl_ca_path = current_dir / "DigiCertGlobalRootCA.crt.pem"
+            
+            # 确保SSL证书文件存在
+            if not ssl_ca_path.exists():
+                raise FileNotFoundError(f"SSL证书文件未找到: {ssl_ca_path}")
+            
+            # 建立数据库连接
             conn = mysql.connector.connect(
-                host=db_config.get('host', 'localhost'),
-                user=db_config.get('user'),
-                password=db_config.get('password'),
-                database=db_config.get('database'),
-                charset='utf8mb4',  # 使用utf8mb4字符集以支持完整的中文字符
+                host=self.config["mysql"]["host"],
+                port=self.config["mysql"].get("port", 3306),
+                user=self.config["mysql"]["user"],
+                password=self.config["mysql"]["password"],
+                database=self.config["mysql"]["database"],
+                ssl_ca=str(ssl_ca_path),
+                ssl_disabled=False,
+                charset='utf8mb4',
                 collation='utf8mb4_unicode_ci'
             )
             return conn
@@ -47,7 +70,7 @@ class DatabaseConnector:
             cursor.execute(query)
             results = cursor.fetchall()
             cursor.close()
-            return results  # 返回完整的结果集
+            return results
         except Exception as e:
             print(f"提取文本错误: {e}")
             return []
@@ -68,17 +91,11 @@ class DatabaseConnector:
                 request = json.loads(data)
                 
                 # 处理请求
-                db_config = {
-                    'host': request.get('db_host', 'localhost'),
-                    'user': request.get('db_user'),
-                    'password': request.get('db_password'),
-                    'database': request.get('database')
-                }
                 table = request.get('table')
                 column = request.get('column')
                 
                 # 连接数据库并提取文本
-                conn = self.connect_db(db_config)
+                conn = self.connect_db()
                 if conn:
                     try:
                         results = self.extract_text(conn, table, column)

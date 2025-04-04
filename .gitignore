@@ -32,8 +32,16 @@ google-services.json
 # Android Profiling
 *.hprof
 
-# SQL key
-LLM/DigiCertGlobalRootCA.crt.pem
 
-#trash files due to MacOS
+# trash files due to MacOS
 ../.DS_Store
+
+# SQL key & yaml
+*.yaml
+*.pem
+
+# Notify files caches
+/LLM/Notify/gpt4o_llm2.py
+/LLM/Notify/compare_output
+/LLM/Notify/output
+/LLM/Notify/time_analysis

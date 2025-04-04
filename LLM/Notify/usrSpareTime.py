@@ -1,15 +1,19 @@
-'''
-Description: 
-Author: Manda
-Version: 
-Date: 2025-03-30 16:42:47
-LastEditors: mdhuang555 67590178+mdhuang555@users.noreply.github.com
-LastEditTime: 2025-03-30 16:59:19
-'''
+# '''
+# Description: 
+# Author: Manda
+# Version: 
+# Date: 2025-03-30 16:42:47
+# LastEditors: mdhuang555 67590178+mdhuang555@users.noreply.github.com
+# LastEditTime: 2025-03-30 16:59:19
+# '''
 import mysql.connector
 import os
 from datetime import datetime
 from collections import defaultdict
+from dataBaseConnecter import DatabaseConnector
+import sys
+import io
+sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
 
 def connect_to_database(db_config: dict) -> mysql.connector.MySQLConnection:
     """连接到MySQL数据库"""
@@ -44,9 +48,15 @@ def get_time_slot(hour: int, minute: int) -> str:
     # 格式化时间段字符串
     return f"{start_hour:02d}:{start_minute:02d}-{end_hour:02d}:{end_minute:02d}"
 
-def analyze_time_slots(conn: mysql.connector.MySQLConnection) -> dict:
+def analyze_time_slots(db_connector: DatabaseConnector) -> dict:
     """分析时间段分布"""
     try:
+        # 连接数据库
+        conn = db_connector.connect_db()
+        if not conn:
+            print("无法连接到数据库")
+            return {}
+            
         cursor = conn.cursor(dictionary=True)
         
         # 获取UCtodolist的数据和对应的ToDoList用户ID
@@ -75,7 +85,10 @@ def analyze_time_slots(conn: mysql.connector.MySQLConnection) -> dict:
         print(f"分析时间段时出错: {e}")
         return {}
     finally:
-        cursor.close()
+        if 'cursor' in locals():
+            cursor.close()
+        if 'conn' in locals() and conn:
+            conn.close()
 
 def save_analysis_results(results: dict, output_dir: str = 'time_analysis'):
     """保存分析结果到文件"""
@@ -112,22 +125,14 @@ def save_analysis_results(results: dict, output_dir: str = 'time_analysis'):
             print(f"保存用户 {user_id} 的分析结果时出错: {e}")
 
 def main():
-    db_config = {
-        'host': '103.116.245.150',
-        'user': 'root',
-        'password': '4bc6bc963e6d8443453676',
-        'database': 'ToDoAgent'
-    }
-
     print("正在连接数据库...")
-    conn = connect_to_database(db_config)
-    if not conn:
-        print("数据库连接失败")
-        return
-
+    
     try:
+        # 创建数据库连接器实例
+        db_connector = DatabaseConnector()
+        
         print("正在分析时间段分布...")
-        results = analyze_time_slots(conn)
+        results = analyze_time_slots(db_connector)
         
         if results:
             print(f"分析完成，共有 {len(results)} 个用户的数据")
@@ -138,8 +143,6 @@ def main():
             
     except Exception as e:
         print(f"处理过程中出错: {e}")
-    finally:
-        conn.close()
 
 if __name__ == "__main__":
     main()
