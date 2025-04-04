@@ -1,43 +1,39 @@
-'''
-Description: 
-Author: Manda
-Version: 
-Date: 2025-03-30 16:28:58
-LastEditors: mdhuang555 67590178+mdhuang555@users.noreply.github.com
-LastEditTime: 2025-03-30 16:39:18
-'''
-import mysql.connector
+# '''
+# Description: 
+# Author: Manda
+# Version: 
+# Date: 2025-03-30 16:28:58
+# LastEditors: mdhuang555 67590178+mdhuang555@users.noreply.github.com
+# LastEditTime: 2025-03-30 16:39:18
+# '''
+from dataBaseConnecter import DatabaseConnector
 import os
 from datetime import datetime
+import sys
+import io
+sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
 
-def connect_to_database(db_config: dict) -> mysql.connector.MySQLConnection:
-    """连接到MySQL数据库"""
-    try:
-        conn = mysql.connector.connect(
-            host=db_config['host'],
-            user=db_config['user'],
-            password=db_config['password'],
-            database=db_config['database'],
-            charset='utf8mb4'
-        )
-        return conn
-    except Exception as e:
-        print(f"数据库连接错误: {e}")
-        return None
-
-def get_table_data(conn: mysql.connector.MySQLConnection, table_name: str) -> dict:
+def get_table_data(db_connector: DatabaseConnector, table_name: str) -> dict:
     """获取表格数据，以todo_id为键"""
-    cursor = conn.cursor(dictionary=True)
     try:
-        cursor.execute(f"SELECT * FROM {table_name}")
-        results = cursor.fetchall()
-        # 将结果转换为以todo_id为键的字典
-        return {str(row['todo_id']): row for row in results}
+        # 连接数据库
+        conn = db_connector.connect_db()
+        if not conn:
+            print("无法连接到数据库")
+            return {}
+            
+        cursor = conn.cursor(dictionary=True)
+        try:
+            # 使用连接器的extract_text方法获取数据
+            results = db_connector.extract_text(conn, table_name, '*')
+            # 将结果转换为以todo_id为键的字典
+            return {str(row['todo_id']): row for row in results}
+        finally:
+            cursor.close()
+            conn.close()
     except Exception as e:
         print(f"获取{table_name}数据错误: {e}")
         return {}
-    finally:
-        cursor.close()
 
 def compare_records(todolist_record: dict, uctodolist_record: dict) -> dict:
     """比较两条记录的差异"""
@@ -94,24 +90,16 @@ def save_differences_to_file(differences: dict, output_dir: str = 'compare_outpu
         print(f"已保存用户 {user_id} 的差异到文件: {filename}")
 
 def main():
-    db_config = {
-        'host': '103.116.245.150',
-        'user': 'root',
-        'password': '4bc6bc963e6d8443453676',
-        'database': 'ToDoAgent'
-    }
-
     print("正在连接数据库...")
-    conn = connect_to_database(db_config)
-    if not conn:
-        print("数据库连接失败")
-        return
-
+    
     try:
+        # 创建数据库连接器实例
+        db_connector = DatabaseConnector()
+        
         # 获取两个表的数据
         print("正在获取表格数据...")
-        todolist_data = get_table_data(conn, 'ToDoList')
-        uctodolist_data = get_table_data(conn, 'UCtodolist')
+        todolist_data = get_table_data(db_connector, 'ToDoList')
+        uctodolist_data = get_table_data(db_connector, 'UCtodolist')
 
         # 比较差异
         print("正在比较差异...")
@@ -137,8 +125,6 @@ def main():
 
     except Exception as e:
         print(f"处理过程中出错: {e}")
-    finally:
-        conn.close()
 
 if __name__ == "__main__":
     main()
