@@ -1,65 +1,95 @@
 # receiving_useful_messages.py
 import json
-import asyncio
 import os
 from typing import Dict, Any
-from filter_useful_data_to_dict import fetch_target_messages
-from todogen_llm import process_data, load_formatted_data
+from pathlib import Path
+from config_loader import get_paths,get_mysql_config
+from filter_message_list import get_message_ids
+from filter_useful_data_to_dict import get_formatted_data  # 改为导入顶层接口
+from todogen_llm import process_data
 
-DATA_DIR = r"D:\python_study\ILoveDo\data_use"
-RESULT_FILE = os.path.join(DATA_DIR, "result1.json")
+DATA_DIR = get_paths()['data_dir']
+RESULT_FILE = os.path.join(DATA_DIR, get_paths()['result_file'])
 
-async def merge_multisource_data() -> Dict[str, Dict]:
-    """合并并扁平化数据字段"""
+# receiving_useful_messages.py
+def merge_multisource_data() -> Dict[str, Dict]:
+    """合并并扁平化数据字段（同步版本）- 修复版"""
+    db_config = get_mysql_config()
     DB_CONFIG = {
-        "host": "103.116.245.150",
-        "database": "ToDoAgent",
-        "password": "4bc6bc963e6d8443453676"
+        'host':db_config['host'],
+        'database':db_config['database'],
+        'password':db_config['password']
     }
-    TARGET_IDS = [
-        327163713, 325202761, 325202741, 325151109,
-        325151100, 325145820, 325144014, 324204487, 322085363
-    ]
+    
+    # 严格ID验证
+    raw_ids = get_message_ids()
+    # if len(raw_ids) != 24:
+        # raise ValueError(f"目标ID数量异常，预期24条，实际获取{len(raw_ids)}条")
+    target_ids = [str(msg_id) for msg_id in raw_ids]
 
-    # 获取数据源
-    llm_formatted = await load_formatted_data()
+    # 数据源获取与验证
+    llm_formatted = get_formatted_data(DB_CONFIG, raw_ids)  # 注意传入原始ID
+
+
     llm_processed = process_data(llm_formatted)
-    db_raw = await fetch_target_messages(TARGET_IDS, DB_CONFIG)
 
-    # 扁平化合并逻辑
+
+    # 精确获取原始数据
+    from database_of_messages import async_main
+    db_raw = async_main(**DB_CONFIG)
+    
+    # 双重过滤保证数据纯净度
+    filtered_db_data = {k: v for k, v in db_raw.items() if k in target_ids}
+
+    # 安全合并逻辑
     merged = {}
-    for msg_id in TARGET_IDS:
-        str_id = str(msg_id)
-        raw_entry = db_raw.get(str_id, {})
-        llm_entry = llm_processed.get(str_id, {})
+    for msg_id in target_ids:
+        # 确保只合并目标ID的数据
+        base_data = filtered_db_data.get(msg_id, {})
+        llm_data = llm_processed.get(msg_id, {})
         
-        # 合并字段（LLM结构化数据优先覆盖原始数据）
-        merged_entry = {**raw_entry, **llm_entry}  # 关键修改点
-        
-        if merged_entry:
-            merged[str_id] = merged_entry
+        # 空值过滤
+        if not base_data and not llm_data:
+            continue
+            
+        merged_entry = {**base_data, **llm_data}
+        merged[msg_id] = merged_entry
 
     return merged
 
-async def main():
+def main():
     os.makedirs(DATA_DIR, exist_ok=True)
     
-    merged_data = await merge_multisource_data()
-    
-    # 读取现有数据（兼容旧格式）
-    try:
-        with open(RESULT_FILE, "r", encoding="utf-8") as f:
-            existing_data = json.load(f)
-    except (FileNotFoundError, json.JSONDecodeError):
-        existing_data = {}
+    merged_data = merge_multisource_data()
 
-    # 合并策略：新数据完全覆盖旧数据
-    final_data = {**existing_data, **merged_data}
+    """根据M、D的需要，这里需要按照unimportant =1 ,important =2 ;urgency =3进行转换"""
+    # 新增：转换urgency字段
+    for entry in merged_data.values():
+        urgency = entry.get("urgency", "").lower()
+        if urgency == "unimportant":
+            entry["urgency"] = 1
+        elif urgency == "important":
+            entry["urgency"] = 2
+        elif urgency == "urgent":
+            entry["urgency"] = 3
+
+    # 修改：将字典的值提取为列表
+    final_data_list = list(merged_data.values())
     
     with open(RESULT_FILE, "w", encoding="utf-8") as f:
-        json.dump(final_data, f, ensure_ascii=False, indent=2)
+        json.dump(final_data_list, f, ensure_ascii=False, indent=2)
     
-    print(f"✅ 扁平化合并完成！有效记录：{len(final_data)} 条")
+    print(f"✅ 扁平化合并完成！有效记录：{len(final_data_list)} 条")
+
+    return RESULT_FILE # 返回生成的 result1.json 路径（如 data/result1.json）
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    main()
+
+
+"""
+if  content +sender 不相同:
+ 直接上传
+elif user 相同：
+ 需要进行比对，然后上传某一条数据
+"""
